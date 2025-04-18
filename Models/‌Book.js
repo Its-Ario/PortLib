@@ -6,6 +6,7 @@ bookSchema = mongoose.Schema({
     author: {type: String, required: true},
     publicationYear: Number,
     copiesAvailable: { type: Number, default: 1 },
+    approved: Boolean,
     borrowedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     submittedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true}
 })

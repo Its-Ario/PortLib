@@ -7,7 +7,7 @@ const router = express.Router();
 router.use(verifyToken);
 
 router.get('/list', async (req, res) => {
-    books = await Book.find();
+    books = await Book.find({ approved: true });
     res.json(books);
 });
 
@@ -20,11 +20,22 @@ router.post('/add', async (req, res) => {
         author, 
         publicationYear,
         copiesAvailable,
-        submittedBy: new mongoose.Types.ObjectId(req.user.id)
+        approved: false,
+        submittedBy: new mongoose.Types.ObjectId(String(req.user.id))
     });      
 
     const savedBook = await book.save();
     res.json(savedBook);
 })
+
+router.get('/pending', async (req, res) => {
+    const pendingBooks = await Book.find({ approved: false }).populate("submittedBy", "username");
+    res.json(pendingBooks);
+});
+
+router.patch('/approve/:id', async (req, res) => {
+    const updated = await Book.findByIdAndUpdate(req.params.id, { approved: true }, {new: true});
+    res.json(updated);
+});
 
 module.exports = router;
