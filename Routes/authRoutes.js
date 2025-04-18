@@ -1,15 +1,16 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const User = require('../Models/User')
+const User = require('../Models/User');
+const { verifyToken } = require('../Middleware/authMiddleware');
 
 const router = express.Router();
 
 function generateToken(user) {
     return jwt.sign(
-    { id: user._id, type: user.type },
+    { id: user._id, tokenVersion: user.tokenVersion },
     process.env.JWT_SECRET,
-    { expiresIn: '1h' }
+    { expiresIn: '7d' }
     );
 }
 
@@ -36,6 +37,21 @@ router.post('/register', async (req, res) => {
     });
     const savedUser = await newUser.save();
     res.status(201).json(savedUser);
+});
+
+router.patch("/changepassword", verifyToken, async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    const user = req.user;
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) return res.status(403).json({ error: "Current password incorrect" });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.tokenVersion += 1;
+    await user.save();
+
+    res.json({ message: "Password updated successfully" });
 });
 
 module.exports = router;

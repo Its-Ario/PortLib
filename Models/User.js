@@ -6,7 +6,8 @@ const userSchema = new mongoose.Schema({
     password: {type: String, required: true},
     email: {type: String, required: true},
     isSuperUser: {type: Boolean, required: true, default: false},
-    type: {type: String, required: true, enum: ["admin", "user"], default: "user"}
+    type: {type: String, required: true, enum: ["admin", "user"], default: "user"},
+    tokenVersion: {type: Number, default: 1}
 });
 
 module.exports = mongoose.model('User', userSchema);
