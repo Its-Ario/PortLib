@@ -1,41 +1,23 @@
 const express = require('express');
-const Book = require('../Models/‌Book')
-const { verifyToken } = require('../Middleware/authMiddleware');
-const mongoose = require('mongoose');
+const auth = require('../Middleware/authMiddleware');
+const bookController = require('../Controllers/bookController');
 
 const router = express.Router();
-router.use(verifyToken);
 
-router.get('/list', async (req, res) => {
-    books = await Book.find({ approved: true });
-    res.json(books);
-});
+router.use(auth);
 
-router.post('/add', async (req, res) => {
-    const {title, isbn, author, publicationYear, copiesAvailable} = req.body;
+router.post('/add', auth.isAdmin, bookController.addBook);
 
-    const book = new Book({
-        title,
-        isbn,
-        author, 
-        publicationYear,
-        copiesAvailable,
-        approved: false,
-        submittedBy: new mongoose.Types.ObjectId(String(req.user.id))
-    });      
+router.get('/pending', auth.isAdmin, bookController.getPendingBooks);
+router.patch('/approve/:id', auth.isAdmin, bookController.approveBook);
+router.put('/:id', auth.isAdmin, bookController.updateBook);
+router.delete('/:id', auth.isAdmin, bookController.deleteBook);
 
-    const savedBook = await book.save();
-    res.json(savedBook);
-})
+router.patch('/:id/for-sale', auth.isAdmin, bookController.markBookForSale);
+router.patch('/:id/remove-from-sale', auth.isAdmin, bookController.removeBookFromSale);
 
-router.get('/pending', async (req, res) => {
-    const pendingBooks = await Book.find({ approved: false }).populate("submittedBy", "username");
-    res.json(pendingBooks);
-});
-
-router.patch('/approve/:id', async (req, res) => {
-    const updated = await Book.findByIdAndUpdate(req.params.id, { approved: true }, {new: true});
-    res.json(updated);
-});
+router.get('/list', bookController.listBooks);
+router.get('/for-sale', bookController.getBooksForSale);
+router.get('/:id', bookController.getBookById);
 
 module.exports = router;

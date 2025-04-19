@@ -27,11 +27,24 @@ async function verifyToken(req, res, next) {
     }
 }
 
-function checkAdmin(req, res, next) {
+function isAdmin(req, res, next) {
     if (req.user?.type !== "admin") {
         return res.status(403).json({message: "Unauthorized"});
     }
     next();
 }
 
-module.exports = {verifyToken, checkAdmin}
+function isSuperUser(req, res, next) {
+    if (!req.user || !req.user.isSuperUser) {
+        return res.status(403).json({
+            success: false,
+            message: 'Super user access required'
+        });
+    }
+    
+    next();
+};
+
+module.exports = verifyToken
+module.exports.isAdmin = isAdmin
+module.exports.isSuperUser = isSuperUser

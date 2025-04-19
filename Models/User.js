@@ -7,7 +7,8 @@ const userSchema = new mongoose.Schema({
     email: {type: String, required: true},
     isSuperUser: {type: Boolean, required: true, default: false},
     type: {type: String, required: true, enum: ["admin", "user"], default: "user"},
-    tokenVersion: {type: Number, default: 1}
+    tokenVersion: {type: Number, default: 1},
+    balance: { type: Number, default: 0 }
 });
 
 module.exports = mongoose.model('User', userSchema);

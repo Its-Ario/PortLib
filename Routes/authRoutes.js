@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../Models/User');
-const { verifyToken } = require('../Middleware/authMiddleware');
+const auth = require('../Middleware/authMiddleware');
 
 const router = express.Router();
 
@@ -15,14 +15,37 @@ function generateToken(user) {
 }
 
 router.post('/login', async (req, res) => {
-    const { username, password } = req.body;
-    const users = await User.find();
-    const user = users.find(u => u.username === username && bcrypt.compare(password, u.password));
-    
-    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
-
-    const token = generateToken(user);
-    res.json({ token });
+    try {
+        const { username, password } = req.body;
+        
+        const user = await User.findOne({ username });
+        
+        if (!user) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+        
+        const isMatch = await bcrypt.compare(password, user.password);
+        
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+        
+        const token = generateToken(user);
+        
+        const userData = {
+            id: user._id,
+            name: user.name,
+            username: user.username,
+            email: user.email,
+            type: user.type,
+            isSuperUser: user.isSuperUser
+        };
+        
+        res.json({ token, user: userData });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
 router.post('/register', async (req, res) => {
@@ -39,7 +62,7 @@ router.post('/register', async (req, res) => {
     res.status(201).json(savedUser);
 });
 
-router.patch("/changepassword", verifyToken, async (req, res) => {
+router.patch("/changepassword", auth, async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     const user = req.user;
     if (!user) return res.status(404).json({ error: "User not found" });

@@ -1,10 +1,10 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const User = require('../Models/User');
-const {verifyToken, checkAdmin} = require('../Middleware/authMiddleware');
+const auth = require('../Middleware/authMiddleware');
 
 const router = express.Router();
-router.use(verifyToken, checkAdmin)
+router.use(auth, auth.isAdmin)
 
 router.get('/', (req, res) => {
     res.status(200).json("Hi, Admin");

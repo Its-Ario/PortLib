@@ -7,8 +7,9 @@ bookSchema = mongoose.Schema({
     publicationYear: Number,
     copiesAvailable: { type: Number, default: 1 },
     approved: {type: Boolean, default: false},
-    borrowedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    submittedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true}
+    submittedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true},
+    forSale: { type: Boolean, default: false },
+    price: { type: Number }
 })
 
 module.exports = mongoose.model('Book', bookSchema);

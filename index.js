@@ -6,15 +6,17 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-const mainRoutes = require('./Routes/mainRoutes')
-const adminRoutes = require('./Routes/adminRoutes')
-const authRoutes = require('./Routes/authRoutes')
-const bookRoutes = require('./Routes/bookRoutes')
+const mainRoutes = require('./Routes/mainRoutes');
+const adminRoutes = require('./Routes/adminRoutes');
+const authRoutes = require('./Routes/authRoutes');
+const bookRoutes = require('./Routes/bookRoutes');
+const transactionRoutes = require('./Routes/transactionRoutes');
 
 app.use('/', mainRoutes);
 app.use('/', authRoutes);
 app.use('/admin', adminRoutes);
 app.use('/book', bookRoutes);
+app.use('/transaction', transactionRoutes);
 
 mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log('✅ MongoDB connected'))
