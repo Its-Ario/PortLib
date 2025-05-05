@@ -1,11 +1,12 @@
-document.addEventListener('DOMContentLoaded', function() {
-    const API_BASE_URL = window.location.protocol === 'https:' 
-        ? 'https://' + window.location.host 
-        : 'http://localhost:3000';
-    
-    const WS_BASE_URL = window.location.protocol === 'https:' 
-        ? 'wss://' + window.location.host 
-        : 'ws://localhost:3000';
+document.addEventListener('DOMContentLoaded', function () {
+    const { protocol, host, pathname } = window.location;
+
+    const basePath = pathname.replace(/\/$/, '');
+
+    const API_BASE_URL = `${protocol}//${host}${basePath}`;
+
+    const WS_PROTOCOL = protocol === 'https:' ? 'wss:' : 'ws:';
+    const WS_BASE_URL = `${WS_PROTOCOL}//${host}${basePath}`;
 
     let map = L.map('map', { 
         dragging: true, 
