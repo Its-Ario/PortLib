@@ -1,40 +1,103 @@
 const WebSocket = require('ws');
+const jwt = require('jsonwebtoken');
+const User = require('./Models/User');
 
 class WebSocketServer {
-    constructor(server) {
+    constructor(server, options = {}) {
+        // Configuration options with defaults
+        this.jwtSecret = options.jwtSecret || process.env.JWT_SECRET || 'your_jwt_secret_key_change_this';
+        
         this.wss = new WebSocket.Server({ 
             server: server,
-            verifyClient: () => true,
+            verifyClient: this._verifyClient.bind(this),
             clientTracking: true,
-            pingInterval: 30000,
-            pingTimeout: 60000
+            pingInterval: options.pingInterval || 30000,
+            pingTimeout: options.pingTimeout || 60000
         });
         
-        this.clients = new Map();
-        this.userLocations = new Map();
+        this.clients = new Map(); // key: userId, value: ws
+        this.userLocations = new Map(); // Store user location/state data
         this.heartbeatInterval = null;
         
         this.init();
     }
     
-    init() {
-        this.wss.on('connection', (ws, req) => {            
-            const clientId = this.generateClientId();
-            this.clients.set(clientId, ws);
+    async _verifyClient(info, done) {
+        try {
+            const url = new URL(info.req.url, 'http://localhost');
+            const token = url.searchParams.get('token');
             
+            if (!token) {
+                return done(false, 401, 'Unauthorized');
+            }
+
+            console.log("A1")
+            
+            try {
+                const decoded = jwt.verify(token, this.jwtSecret);
+                                
+                if (!decoded.id) {
+                    console.error('Token missing id field');
+                    return done(false, 401, 'Invalid token format');
+                }
+                
+                const user = await User.findById(decoded.id);
+                console.log()
+                console.log(user.username);
+                console.log(user.tokenVersion);
+                if (decoded.tokenVersion != user.tokenVersion) {
+                    return done(false, 403, "User not found");
+                }
+
+                info.req.user = user;
+                
+                return done(true);
+            } catch (err) {
+                console.error('Token verification failed:', err.message);
+                return done(false, 401, 'Invalid token');
+            }
+        } catch (error) {
+            console.error('Error in verifyClient:', error);
+            return done(false, 500, 'Server error');
+        }
+    }
+    
+    init() {
+        this.wss.on('connection', (ws, req) => {
+            console.log(req.user);
+            const userId = req.user.id;
+            const username = req.user.username;
+            
+            if (!userId) {
+                ws.close(1008, 'Unauthorized');
+                return;
+            }
+            
+            console.log(`User ${userId} (${username}) connected`);
+            
+            // Store the client connection
+            this.clients.set(userId, ws);
+            
+            // Setup heartbeat
             ws.isAlive = true;
             ws.on('pong', () => {
                 ws.isAlive = true;
             });
-
+            
+            // Send current active users to the new client
             if (this.userLocations.size > 0) {
-                this.userLocations.forEach((location) => {
-                    try {
-                        ws.send(JSON.stringify(location));
-                    } catch (e) {
-                        console.error('Error sending initial location data:', e);
-                    }
+                const activeUsers = [];
+                this.userLocations.forEach((userData) => {
+                    activeUsers.push(userData);
                 });
+                
+                if (activeUsers.length > 0) {
+                    try {
+                        ws.send(JSON.stringify(activeUsers));
+                    } catch (e) {
+                        console.error('Error sending initial users data:', e);
+                    }
+                }
             }
             
             ws.on('message', (message) => {
@@ -42,19 +105,38 @@ class WebSocketServer {
                     const messageStr = message instanceof Buffer ? message.toString() : message;
                     const data = JSON.parse(messageStr);
                     
+                    // Verify the sender
+                    if (data.userId && data.userId !== userId) {
+                        console.warn(`User ${userId} tried to send data for ${data.userId}`);
+                        return;
+                    }
+                    
+                    // Handle disconnect message
                     if (data.type === 'disconnect') {
-                        this.userLocations.delete(data.userId);
+                        this.userLocations.delete(userId);
                         
-                        this.broadcastToAll(JSON.stringify({
-                            userId: data.userId,
+                        this.broadcastToAll({
+                            userId: userId,
+                            username: username,
                             type: 'disconnect'
-                        }));
+                        });
                         
                         return;
                     }
                     
-                    this.userLocations.set(data.userId, data);
-                    this.broadcastToAll(JSON.stringify(data));
+                    // Override userId and username from token to prevent spoofing
+                    data.userId = userId;
+                    data.username = username;
+                    
+                    // Log for debugging
+                    console.log(`Processing message from user ${userId} (${username}):`, data);
+                    
+                    // Store user data with the connection
+                    ws.userData = data;
+                    this.userLocations.set(userId, data);
+                    
+                    // Broadcast the message to all clients
+                    this.broadcastToAll(data);
                     
                 } catch (e) {
                     console.error('Error processing message:', e);
@@ -62,29 +144,45 @@ class WebSocketServer {
             });
             
             ws.on('close', () => {
-                this.clients.delete(clientId);
+                console.log(`User ${userId} (${username}) disconnected`);
+                
+                // Remove client
+                this.clients.delete(userId);
+                this.userLocations.delete(userId);
+                
+                // Notify other clients
+                this.broadcastToAll({
+                    userId: userId,
+                    username: username,
+                    type: 'disconnect'
+                });
             });
             
             ws.on('error', (error) => {
                 console.error('WebSocket error:', error);
-                this.clients.delete(clientId);
+                this.clients.delete(userId);
+                this.userLocations.delete(userId);
             });
         });
         
         this.startHeartbeat();
     }
     
-    broadcastToAll(message) {
-        this.clients.forEach((client, id) => {
+    broadcastToAll(data) {
+        const message = typeof data === 'string' ? data : JSON.stringify(data);
+        
+        this.clients.forEach((client, userId) => {
             if (client.readyState === WebSocket.OPEN) {
                 try {
                     client.send(message);
                 } catch (err) {
-                    console.error(`Error sending to client ${id}:`, err);
-                    this.clients.delete(id);
+                    console.error(`Error sending to client ${userId}:`, err);
+                    this.clients.delete(userId);
+                    this.userLocations.delete(userId);
                 }
             } else if (client.readyState !== WebSocket.CONNECTING) {
-                this.clients.delete(id);
+                this.clients.delete(userId);
+                this.userLocations.delete(userId);
             }
         });
     }
@@ -111,15 +209,12 @@ class WebSocketServer {
         clearInterval(this.heartbeatInterval);
     }
     
-    generateClientId() {
-        return 'client_' + Math.random().toString(36).substr(2, 9);
-    }
-    
     getStatus() {
         return {
             status: 'active',
             connections: this.clients.size,
-            activeSharingUsers: this.userLocations.size
+            activeSharingUsers: this.userLocations.size,
+            uptime: process.uptime()
         };
     }
     
