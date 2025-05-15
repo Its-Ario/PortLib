@@ -66,17 +66,17 @@ server.listen(PORT, () => {
 });
 
 // Graceful shutdown
-process.on('SIGINT', function() {
-    console.log('Shutting down server...');
-    wsServer.close();
-    server.close(() => {
-        console.log('HTTP server closed');
-        mongoose.connection.close(false, () => {
-            console.log('MongoDB connection closed');
-            process.exit(0);
-        });
-    });
-});
+// process.on('SIGINT', function() {
+//     console.log('Shutting down server...');
+//     wsServer.close();
+//     server.close(() => {
+//         console.log('HTTP server closed');
+//         mongoose.connection.close(false, () => {
+//             console.log('MongoDB connection closed');
+//             process.exit(0);
+//         });
+//     });
+// });
 
 // Error handling
 process.on('uncaughtException', (err) => {

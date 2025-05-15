@@ -24,6 +24,12 @@ document.addEventListener('DOMContentLoaded', function () {
     let watchId = null;
     let hasZoomedToLocation = false;
     let lastKnownPosition = null;
+    let lastSentPosition = null;
+
+    let updateInterval = null;
+    const UPDATE_DELAY = 5000;
+    let pendingLocationUpdate = false;
+    let lastPositionData = null;
 
     let socket = null;
     let reconnectAttempts = 0;
@@ -43,6 +49,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const usersList = document.getElementById('users-list');
     const usersCount = document.getElementById('users-count');
     const recenterMapBtn = document.getElementById('recenter-map');
+    const showLocationCheckbox = document.getElementById('show-location-checkbox');
 
     function checkAuth() {
         const token = localStorage.getItem('token');
@@ -103,94 +110,104 @@ document.addEventListener('DOMContentLoaded', function () {
         updateUsersList();
     }
 
-function updateUserMarker(userData) {
-    try {
-        const userId = userData.userId;
-        const username = userData.username || null;
-        const lat = parseFloat(userData.lat);
-        const lng = parseFloat(userData.lng);
-        const accuracy = parseFloat(userData.accuracy) || 10;
-        
-        if (!userId || isNaN(lat) || isNaN(lng)) {
-            console.error('Invalid marker data:', userData);
-            return;
-        }
-
-        const position = [lat, lng];
-        const isCurrentUser = userId === currentUserId;
-        
-        if (userMarkers.has(userId)) {
-            const markerData = userMarkers.get(userId);
+    function updateUserMarker(userData) {
+        try {
+            const userId = userData.userId;
+            const username = userData.username || 'User';
+            const lat = parseFloat(userData.lat);
+            const lng = parseFloat(userData.lng);
+            const accuracy = parseFloat(userData.accuracy) || 10;
             
-            markerData.marker.setLatLng(position);
-            markerData.marker.getPopup().setContent(
-                createPopupContent(username, accuracy, isCurrentUser)
-            );
-            
-            markerData.accuracyCircle.setLatLng(position);
-            markerData.accuracyCircle.setRadius(accuracy);
-            markerData.lastUpdated = Date.now();
-            
-            if (isCurrentUser) {
-                lastKnownPosition = position;
+            if (!userId || isNaN(lat) || isNaN(lng)) {
+                console.error('Invalid marker data:', userData);
+                return;
             }
-        } else {
-            const markerColor = isCurrentUser ? '#3498db' : '#e74c3c';
-            const fillColor = isCurrentUser ? '#3498db' : '#e74c3c';
+
+            const position = [lat, lng];
+            const isCurrentUser = userId === currentUserId;
             
-            try {
-                const marker = L.marker(position, {
-                    icon: L.divIcon({
-                        className: 'user-location-marker',
-                        html: `<div class="user-location-pulse" style="border-color:${markerColor}"></div>
-                                <div class="user-location-point" style="background-color:${markerColor}"></div>`,
-                        iconSize: [24, 24],
-                        iconAnchor: [12, 12]
-                    })
-                }).addTo(map);
+            if (userMarkers.has(userId)) {
+                const markerData = userMarkers.get(userId);
                 
-                marker.bindPopup(createPopupContent(username, accuracy, isCurrentUser));
+                markerData.marker.setLatLng(position);
+                markerData.marker.getPopup().setContent(
+                    createPopupContent(username, accuracy, isCurrentUser)
+                );
                 
-                const accuracyCircle = L.circle(position, {
-                    radius: accuracy,
-                    weight: 1,
-                    color: markerColor,
-                    fillColor: fillColor,
-                    fillOpacity: 0.15
-                }).addTo(map);
-                
-                userMarkers.set(userId, {
-                    marker: marker,
-                    accuracyCircle: accuracyCircle,
-                    lastUpdated: Date.now(),
-                    isCurrentUser: isCurrentUser
-                });
+                markerData.accuracyCircle.setLatLng(position);
+                markerData.accuracyCircle.setRadius(accuracy);
+                markerData.lastUpdated = Date.now();
+                markerData.username = username;
                 
                 if (isCurrentUser) {
                     lastKnownPosition = position;
-                    
-                    if (!hasZoomedToLocation) {
-                        map.setView(position, 15);
-                        hasZoomedToLocation = true;
-                    }
                 }
-            } catch (error) {
-                console.error('Error creating marker:', error);
+            } else {
+                const markerColor = isCurrentUser ? '#3498db' : '#e74c3c';
+                const fillColor = isCurrentUser ? '#3498db' : '#e74c3c';
+                
+                try {
+                    const marker = L.marker(position, {
+                        icon: L.divIcon({
+                            className: 'user-location-marker',
+                            html: `<div class="user-location-pulse" style="border-color:${markerColor}"></div>
+                                    <div class="user-location-point" style="background-color:${markerColor}"></div>`,
+                            iconSize: [24, 24],
+                            iconAnchor: [12, 12]
+                        })
+                    }).addTo(map);
+                    
+                    marker.bindPopup(createPopupContent(username, accuracy, isCurrentUser));
+                    
+                    const accuracyCircle = L.circle(position, {
+                        radius: accuracy,
+                        weight: 1,
+                        color: markerColor,
+                        fillColor: fillColor,
+                        fillOpacity: 0.15
+                    }).addTo(map);
+                    
+                    userMarkers.set(userId, {
+                        marker: marker,
+                        accuracyCircle: accuracyCircle,
+                        lastUpdated: Date.now(),
+                        isCurrentUser: isCurrentUser,
+                        username: username
+                    });
+                    
+                    if (isCurrentUser) {
+                        lastKnownPosition = position;
+                        
+                        if (!hasZoomedToLocation) {
+                            map.setView(position, 15);
+                            hasZoomedToLocation = true;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error creating marker:', error);
+                }
             }
+            
+            updateUsersList();
+            
+        } catch (error) {
+            console.error('Error in updateUserMarker:', error);
         }
-    } catch (error) {
-        console.error('Error in updateUserMarker:', error);
     }
-}
 
-function createPopupContent(username, accuracy, isCurrentUser) {
-    return `
-        <div class="user-popup">
-            <h4>${isCurrentUser ? 'You' : (username ? username : 'User')}</h4>
-            <p>Accuracy: ${accuracy.toFixed(2)}m</p>
-        </div>
-    `;
-}
+    function createPopupContent(username, accuracy, isCurrentUser) {
+        return `
+            <div class="user-popup">
+                <h4>${isCurrentUser ? `You (${username})` : username}</h4>
+                <p>Accuracy: ${accuracy.toFixed(2)}m</p>
+                <p>Updated: ${formatTime(new Date())}</p>
+            </div>
+        `;
+    }
+
+    function formatTime(date) {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
 
     function removeUserMarker(userId) {
         if (userMarkers.has(userId)) {
@@ -202,43 +219,43 @@ function createPopupContent(username, accuracy, isCurrentUser) {
         }
     }
 
-function updateUsersList() {
-    usersList.innerHTML = '';
-    usersCount.textContent = userMarkers.size + ' users online';
-    
-    userMarkers.forEach((markerData, userId) => {
-        const userItem = document.createElement('div');
-        userItem.className = 'user-item';
+    function updateUsersList() {
+        usersList.innerHTML = '';
+        usersCount.textContent = userMarkers.size + ' users online';
         
-        if (userId === currentUserId) {
-            userItem.className += ' current';
-        }
-        
-        const timeAgo = Math.floor((Date.now() - markerData.lastUpdated) / 1000);
-        const markerPos = markerData.marker.getLatLng();
-        const isOnline = timeAgo < 60;
-        
-        const username = markerData.username || null;
-        
-        userItem.innerHTML = `
-            <strong>${userId === currentUserId ? 'You' : (username ? username : 'User')}</strong>
-            <div class="user-details">
-                <div><i class="fas fa-map-marker-alt"></i> Lat: ${markerPos.lat.toFixed(6)}, Lng: ${markerPos.lng.toFixed(6)}</div>
-                <div><i class="fas fa-clock"></i> Updated: ${formatTimeAgo(timeAgo)}</div>
-                <div class="user-status ${isOnline ? 'online' : 'offline'}">
-                    <i class="fas fa-circle"></i> ${isOnline ? 'Online' : 'Inactive'}
+        userMarkers.forEach((markerData, userId) => {
+            const userItem = document.createElement('div');
+            userItem.className = 'user-item';
+            
+            if (userId === currentUserId) {
+                userItem.className += ' current';
+            }
+            
+            const timeAgo = Math.floor((Date.now() - markerData.lastUpdated) / 1000);
+            const markerPos = markerData.marker.getLatLng();
+            const isOnline = timeAgo < 60;
+            
+            const username = markerData.username || 'User';
+            
+            userItem.innerHTML = `
+                <strong>${userId === currentUserId ?  `You (${username})` : username}</strong>
+                <div class="user-details">
+                    <div><i class="fas fa-map-marker-alt"></i> Lat: ${markerPos.lat.toFixed(6)}, Lng: ${markerPos.lng.toFixed(6)}</div>
+                    <div><i class="fas fa-clock"></i> Updated: ${formatTimeAgo(timeAgo)}</div>
+                    <div class="user-status ${isOnline ? 'online' : 'offline'}">
+                        <i class="fas fa-circle"></i> ${isOnline ? 'Online' : 'Inactive'}
+                    </div>
                 </div>
-            </div>
-        `;
-        
-        userItem.addEventListener('click', () => {
-            map.setView([markerPos.lat, markerPos.lng], 15);
-            markerData.marker.openPopup();
+            `;
+            
+            userItem.addEventListener('click', () => {
+                map.setView([markerPos.lat, markerPos.lng], 15);
+                markerData.marker.openPopup();
+            });
+            
+            usersList.appendChild(userItem);
         });
-        
-        usersList.appendChild(userItem);
-    });
-}
+    }
 
     function formatTimeAgo(seconds) {
         if (seconds < 60) {
@@ -254,6 +271,8 @@ function updateUsersList() {
         if ("geolocation" in navigator) {
             startTrackingBtn.disabled = true;
             stopTrackingBtn.disabled = false;
+            
+            startLocationUpdateInterval();
             
             navigator.geolocation.getCurrentPosition(
                 handlePosition,
@@ -277,6 +296,26 @@ function updateUsersList() {
         }
     }
 
+    function startLocationUpdateInterval() {
+        if (updateInterval) {
+            clearInterval(updateInterval);
+        }
+        
+        updateInterval = setInterval(() => {
+            if (pendingLocationUpdate && lastPositionData) {
+                sendLocationUpdate(lastPositionData);
+                pendingLocationUpdate = false;
+            }
+        }, UPDATE_DELAY);
+    }
+
+    function stopLocationUpdateInterval() {
+        if (updateInterval) {
+            clearInterval(updateInterval);
+            updateInterval = null;
+        }
+    }
+
     function handlePosition(position) {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
@@ -292,14 +331,34 @@ function updateUsersList() {
             lat: lat,
             lng: lng,
             accuracy: accuracy,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            showLocationToEveryone: showLocationCheckbox ? showLocationCheckbox.checked : false
         };
         
         updateUserMarker(userData);
-        updateUsersList();
         
+        lastPositionData = userData;
+        pendingLocationUpdate = true;
+        
+        if (!lastSentPosition || calculateDistance(lastSentPosition, [lat, lng]) > 10) {
+            sendLocationUpdate(userData);
+            pendingLocationUpdate = false;
+            lastSentPosition = [lat, lng];
+        }
+    }
+
+    function calculateDistance(pos1, pos2) {
+        if (!pos1 || !pos2) return 10000;
+        
+        const latDiff = pos1[0] - pos2[0];
+        const lngDiff = pos1[1] - pos2[1];
+        return Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111000;
+    }
+
+    function sendLocationUpdate(userData) {
         if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify(userData));
+            lastSentPosition = [userData.lat, userData.lng];
         }
     }
 
@@ -332,18 +391,20 @@ function updateUsersList() {
             watchId = null;
         }
         
+        stopLocationUpdateInterval();
+        
         startTrackingBtn.disabled = false;
         stopTrackingBtn.disabled = true;
-        
-        if (userMarkers.has(currentUserId)) {
-            removeUserMarker(currentUserId);
-        }
         
         if (socket && socket.readyState === WebSocket.OPEN && currentUserId) {
             socket.send(JSON.stringify({
                 userId: currentUserId,
                 type: 'disconnect'
             }));
+        }
+        
+        if (userMarkers.has(currentUserId)) {
+            removeUserMarker(currentUserId);
         }
         
         coordsElement.innerHTML = '<i class="fas fa-crosshairs"></i> Waiting for location...';
@@ -436,7 +497,14 @@ function updateUsersList() {
             } else {
                 try {
                     data = JSON.parse(event.data);
-                    processIncomingData(data);
+                    
+                    if (Array.isArray(data)) {
+                        data.forEach(userData => {
+                            processIncomingData(userData);
+                        });
+                    } else {
+                        processIncomingData(data);
+                    }
                 } catch (error) {
                     console.error('Error parsing text data as JSON:', error, event.data);
                 }
@@ -459,9 +527,8 @@ function updateUsersList() {
             return;
         }
         
-        if (data.userId && typeof data.lat === 'number' && typeof data.lng === 'number') {
+        if (data.userId && data.lat !== undefined && data.lng !== undefined) {
             updateUserMarker(data);
-            updateUsersList();
         } else {
             console.error('Missing required location data:', data);
         }
@@ -543,6 +610,29 @@ function updateUsersList() {
         }
     });
 
+    if (showLocationCheckbox) {
+        showLocationCheckbox.addEventListener('change', function() {
+            if (lastPositionData) {
+                lastPositionData.showLocationToEveryone = this.checked;
+                
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    const visibilityUpdate = {
+                        userId: currentUserId,
+                        type: 'visibility',
+                        showLocationToEveryone: this.checked
+                    };
+                    
+                    socket.send(JSON.stringify(visibilityUpdate));
+                    
+                    if (lastPositionData.lat && lastPositionData.lng) {
+                        sendLocationUpdate(lastPositionData);
+                        pendingLocationUpdate = false;
+                    }
+                }
+            }
+        });
+    }
+
     window.addEventListener('beforeunload', function() {
         stopWatchingPosition();
         
@@ -554,7 +644,7 @@ function updateUsersList() {
         }
     });
 
-    setInterval(updateUsersList, 5000);
+    setInterval(updateUsersList, 10000);
     
     setInterval(function() {
         const now = Date.now();
