@@ -5,7 +5,7 @@
     "main": "server.js",
     "type": "module",
     "scripts": {
-        "test": "jest",
+        "test": "npx cross-env NODE_OPTIONS=\"--experimental-vm-modules\" jest",
         "start": "node server.js",
         "dev": "nodemon server.js",
         "lint": "eslint .",
