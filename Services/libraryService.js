@@ -1,15 +1,14 @@
-import { findById, findByIdAndUpdate } from '../Models/Book';
-import { findById as _findById, findByIdAndUpdate as _findByIdAndUpdate } from '../Models/User';
-import Transaction, { findById as __findById, find } from '../Models/Transaction';
+import Book from '../Models/Book.js';
+import User from '../Models/User.js';
+import Transaction from '../Models/Transaction.js';
 
 class LibraryService {
     async borrowBook(bookId, userId, durationDays = 14) {
-        const book = await findById(bookId);
-        const user = await _findById(userId);
+        const book = await Book.findById(bookId);
+        if (!book) throw new Error('Book not found');
 
-        if (!book || !user) {
-            throw new Error('Book or user not found');
-        }
+        const user = await User.findById(userId);
+        if (!user) throw new Error('User not found');
 
         if (book.copiesAvailable <= 0) {
             throw new Error('No copies available for borrowing');
@@ -23,7 +22,7 @@ class LibraryService {
             user: userId,
             type: 'borrow',
             startDate: new Date(),
-            dueDate: dueDate,
+            dueDate,
             status: 'active',
         });
 
@@ -35,7 +34,9 @@ class LibraryService {
     }
 
     async returnBook(transactionId) {
-        const transaction = await __findById(transactionId).populate('book').populate('user');
+        const transaction = await Transaction.findById(transactionId)
+            .populate('book')
+            .populate('user');
 
         if (!transaction || transaction.type !== 'borrow') {
             throw new Error('Transaction not found or not a borrowing transaction');
@@ -47,12 +48,15 @@ class LibraryService {
 
         const today = new Date();
 
-        if (today > transaction.dueDate) {
+        if (today > transaction.dueDate && transaction.status === 'active') {
             transaction.status = 'overdue';
-            const daysLate = Math.floor((today - transaction.dueDate) / (1000 * 60 * 60 * 24));
+
+            const daysLate = Math.floor(
+                (today.getTime() - transaction.dueDate.getTime()) / (1000 * 60 * 60 * 24)
+            );
             const fine = daysLate * 0.5;
 
-            await _findByIdAndUpdate(transaction.user._id, {
+            await User.findByIdAndUpdate(transaction.user._id, {
                 $inc: { balance: -fine },
             });
         }
@@ -61,7 +65,7 @@ class LibraryService {
         transaction.returnDate = today;
         await transaction.save();
 
-        await findByIdAndUpdate(transaction.book._id, {
+        await Book.findByIdAndUpdate(transaction.book._id, {
             $inc: { copiesAvailable: 1 },
         });
 
@@ -69,12 +73,11 @@ class LibraryService {
     }
 
     async sellBook(bookId, userId) {
-        const book = await findById(bookId);
-        const user = await _findById(userId);
+        const book = await Book.findById(bookId);
+        if (!book) throw new Error('Book not found');
 
-        if (!book || !user) {
-            throw new Error('Book or user not found');
-        }
+        const user = await User.findById(userId);
+        if (!user) throw new Error('User not found');
 
         if (book.copiesAvailable <= 0 || !book.forSale) {
             throw new Error('Book is not available for sale');
@@ -104,22 +107,23 @@ class LibraryService {
     }
 
     async getUserTransactions(userId) {
-        return find({ user: userId }).populate('book').sort({ createdAt: -1 });
+        return Transaction.find({ user: userId }).populate('book').sort({ createdAt: -1 }).lean();
     }
 
     async getBookTransactions(bookId) {
-        return find({ book: bookId }).populate('user').sort({ createdAt: -1 });
+        return Transaction.find({ book: bookId }).populate('user').sort({ createdAt: -1 }).lean();
     }
 
     async getOverdueTransactions() {
         const today = new Date();
-        return find({
+        return Transaction.find({
             type: 'borrow',
             status: 'active',
             dueDate: { $lt: today },
         })
             .populate('book')
-            .populate('user');
+            .populate('user')
+            .lean();
     }
 
     async addUserFunds(userId, amount) {
@@ -127,7 +131,11 @@ class LibraryService {
             throw new Error('Amount must be positive');
         }
 
-        const user = await _findByIdAndUpdate(userId, { $inc: { balance: amount } }, { new: true });
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { $inc: { balance: amount } },
+            { new: true }
+        );
 
         if (!user) {
             throw new Error('User not found');
@@ -137,7 +145,11 @@ class LibraryService {
     }
 
     async getAllTransactions() {
-        return find().populate('book').populate('user', '-password').sort({ createdAt: -1 });
+        return Transaction.find()
+            .populate('book')
+            .populate('user', '-password')
+            .sort({ createdAt: -1 })
+            .lean();
     }
 }
 

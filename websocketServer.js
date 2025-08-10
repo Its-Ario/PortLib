@@ -1,12 +1,13 @@
-import { Server, OPEN, CONNECTING } from 'ws';
-import { verify } from 'jsonwebtoken';
-import User from './Models/User';
+import { WebSocketServer as wsServer } from 'ws';
+import pkg from 'jsonwebtoken';
+const { verify } = pkg;
+import User from './Models/User.js';
 
 class WebSocketServer {
     constructor(server, options = {}) {
         this.jwtSecret = options.jwtSecret || process.env.JWT_SECRET || 'jwt_secret';
 
-        this.wss = new Server({
+        this.wss = new wsServer({
             server: server,
             verifyClient: this._verifyClient.bind(this),
             clientTracking: true,
@@ -300,7 +301,7 @@ class WebSocketServer {
             this.broadcastToAll(actionData);
         } else {
             const selfClient = this.clients.get(userId);
-            if (selfClient && selfClient.readyState === OPEN) {
+            if (selfClient && selfClient.readyState === WebSocket.WebSocket.OPEN) {
                 try {
                     const selfData = { ...actionData, isSelf: true };
                     selfClient.send(JSON.stringify(selfData));
@@ -375,14 +376,17 @@ class WebSocketServer {
         const deadClients = [];
 
         this.clients.forEach((client, clientId) => {
-            if (client.readyState === OPEN && filterFunction(client)) {
+            if (client.readyState === WebSocket.OPEN && filterFunction(client)) {
                 try {
                     client.send(message);
                 } catch (err) {
                     console.error(`Error sending to client ${clientId}:`, err);
                     deadClients.push(clientId);
                 }
-            } else if (client.readyState !== OPEN && client.readyState !== CONNECTING) {
+            } else if (
+                client.readyState !== WebSocket.OPEN &&
+                client.readyState !== WebSocket.CONNECTING
+            ) {
                 deadClients.push(clientId);
             }
         });
@@ -397,7 +401,7 @@ class WebSocketServer {
         const deadClients = [];
 
         this.clients.forEach((client, clientId) => {
-            if (client.readyState === OPEN) {
+            if (client.readyState === WebSocket.OPEN) {
                 try {
                     const isSelf = data.userId === clientId;
                     if (isSelf) {
@@ -410,7 +414,10 @@ class WebSocketServer {
                     console.error(`Error sending to client ${clientId}:`, err);
                     deadClients.push(clientId);
                 }
-            } else if (client.readyState !== OPEN && client.readyState !== CONNECTING) {
+            } else if (
+                client.readyState !== WebSocket.OPEN &&
+                client.readyState !== WebSocket.CONNECTING
+            ) {
                 deadClients.push(clientId);
             }
         });

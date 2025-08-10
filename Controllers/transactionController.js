@@ -1,146 +1,65 @@
-import libraryService from '../Services/libraryService';
+import libraryService from '../Services/libraryService.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
 
-export async function borrowBook(req, res) {
-    try {
-        const { bookId, durationDays } = req.body;
-        const userId = req.user.id;
+export const borrowBook = asyncHandler(async (req, res) => {
+    const { bookId, durationDays } = req.body;
+    const userId = req.user.id;
 
-        const transaction = await libraryService.borrowBook(bookId, userId, durationDays);
+    const transaction = await libraryService.borrowBook(bookId, userId, durationDays);
 
-        res.status(200).json({
-            success: true,
-            data: transaction,
-        });
-    } catch (error) {
-        res.status(400).json({
-            success: false,
-            message: error.message,
-        });
-    }
-}
+    res.status(200).json({ success: true, data: transaction });
+});
 
-export async function returnBook(req, res) {
-    try {
-        const { transactionId } = req.params;
+export const returnBook = asyncHandler(async (req, res) => {
+    const { transactionId } = req.params;
 
-        const transaction = await libraryService.returnBook(transactionId);
+    const transaction = await libraryService.returnBook(transactionId);
 
-        res.status(200).json({
-            success: true,
-            data: transaction,
-        });
-    } catch (error) {
-        res.status(400).json({
-            success: false,
-            message: error.message,
-        });
-    }
-}
+    res.status(200).json({ success: true, data: transaction });
+});
 
-export async function purchaseBook(req, res) {
-    try {
-        const { bookId } = req.body;
-        const userId = req.user.id;
+export const purchaseBook = asyncHandler(async (req, res) => {
+    const { bookId } = req.body;
+    const userId = req.user.id;
 
-        const transaction = await libraryService.sellBook(bookId, userId);
+    const transaction = await libraryService.sellBook(bookId, userId);
 
-        res.status(200).json({
-            success: true,
-            data: transaction,
-        });
-    } catch (error) {
-        res.status(400).json({
-            success: false,
-            message: error.message,
-        });
-    }
-}
+    res.status(200).json({ success: true, data: transaction });
+});
 
-export async function getUserTransactions(req, res) {
-    try {
-        const userId = req.user.id;
+export const getUserTransactions = asyncHandler(async (req, res) => {
+    const userId = req.user.id;
 
-        const transactions = await libraryService.getUserTransactions(userId);
+    const transactions = await libraryService.getUserTransactions(userId);
 
-        res.status(200).json({
-            success: true,
-            data: transactions,
-        });
-    } catch (error) {
-        res.status(400).json({
-            success: false,
-            message: error.message,
-        });
-    }
-}
+    res.status(200).json({ success: true, data: transactions });
+});
 
-export async function getBookTransactions(req, res) {
-    try {
-        const { bookId } = req.params;
+export const getBookTransactions = asyncHandler(async (req, res) => {
+    const { bookId } = req.params;
 
-        const transactions = await libraryService.getBookTransactions(bookId);
+    const transactions = await libraryService.getBookTransactions(bookId);
 
-        res.status(200).json({
-            success: true,
-            data: transactions,
-        });
-    } catch (error) {
-        res.status(400).json({
-            success: false,
-            message: error.message,
-        });
-    }
-}
+    res.status(200).json({ success: true, data: transactions });
+});
 
-export async function getOverdueTransactions(req, res) {
-    try {
-        const transactions = await libraryService.getOverdueTransactions();
+export const getOverdueTransactions = asyncHandler(async (req, res) => {
+    const transactions = await libraryService.getOverdueTransactions();
 
-        res.status(200).json({
-            success: true,
-            data: transactions,
-        });
-    } catch (error) {
-        res.status(400).json({
-            success: false,
-            message: error.message,
-        });
-    }
-}
+    res.status(200).json({ success: true, data: transactions });
+});
 
-export async function addFunds(req, res) {
-    try {
-        const { amount } = req.body;
-        const userId = req.user.id;
+export const addFunds = asyncHandler(async (req, res) => {
+    const { amount } = req.body;
+    const userId = req.user.id;
 
-        const user = await libraryService.addUserFunds(userId, amount);
+    const user = await libraryService.addUserFunds(userId, amount);
 
-        res.status(200).json({
-            success: true,
-            data: {
-                balance: user.balance,
-            },
-        });
-    } catch (error) {
-        res.status(400).json({
-            success: false,
-            message: error.message,
-        });
-    }
-}
+    res.status(200).json({ success: true, data: { balance: user.balance } });
+});
 
-export async function getAllTransactions(req, res) {
-    try {
-        const transactions = await libraryService.getAllTransactions();
+export const getAllTransactions = asyncHandler(async (req, res) => {
+    const transactions = await libraryService.getAllTransactions();
 
-        res.status(200).json({
-            success: true,
-            data: transactions,
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: error.message,
-        });
-    }
-}
+    res.status(200).json({ success: true, data: transactions });
+});

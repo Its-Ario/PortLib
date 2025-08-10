@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { hash } from 'bcrypt';
-import User, { findById, findByIdAndUpdate } from '../Models/User';
-import auth, { isAdmin } from '../Middleware/authMiddleware';
+import User from '../Models/User.js';
+import auth, { isAdmin } from '../Middleware/authMiddleware.js';
 
 const router = Router();
 router.use(auth, isAdmin);
@@ -22,10 +22,10 @@ router.post('/adduser', async (req, res) => {
 });
 
 router.patch('/togglesuperuser/:id', async (req, res) => {
-    const user = await findById(req.params.id);
+    const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    const updatedUser = await findByIdAndUpdate(
+    const updatedUser = await User.findByIdAndUpdate(
         req.params.id,
         { isSuperUser: !user.isSuperUser },
         { new: true }

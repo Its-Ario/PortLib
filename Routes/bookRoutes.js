@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import auth, { isAdmin } from '../Middleware/authMiddleware';
+import auth, { isAdmin } from '../Middleware/authMiddleware.js';
 import {
     addBook,
     getPendingBooks,
@@ -11,7 +11,7 @@ import {
     listBooks,
     getBooksForSale,
     getBookById,
-} from '../Controllers/bookController';
+} from '../Controllers/bookController.js';
 
 const router = Router();
 

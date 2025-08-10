@@ -1,10 +1,11 @@
-import Book, { find, findByIdAndUpdate, findById, findByIdAndDelete } from '../Models/Book';
 import { Types } from 'mongoose';
+import Book from '../Models/Book.js';
 
 class BookService {
     async getApprovedBooks() {
-        return find({ approved: true });
+        return Book.find({ approved: true }).lean();
     }
+
     async addBook(bookData, userId) {
         const { title, isbn, author, publicationYear, copiesAvailable } = bookData;
 
@@ -21,23 +22,28 @@ class BookService {
         return book.save();
     }
 
-    async getPendingBooks() {
-        return find({ approved: false }).populate('submittedBy', 'username');
+    async getPendingBooks({ limit = 20, skip = 0 } = {}) {
+        return Book.find({ approved: false })
+            .populate('submittedBy', 'username')
+            .skip(skip)
+            .limit(limit)
+            .lean();
     }
 
     async approveBook(bookId) {
-        return findByIdAndUpdate(bookId, { approved: true }, { new: true });
+        return Book.findByIdAndUpdate(bookId, { approved: true }, { new: true });
     }
 
     async getBookById(bookId) {
-        return findById(bookId);
+        return Book.findById(bookId).lean();
     }
 
     async updateBook(bookId, updateData) {
-        return findByIdAndUpdate(bookId, updateData, { new: true });
+        return Book.findByIdAndUpdate(bookId, updateData, { new: true });
     }
+
     async deleteBook(bookId) {
-        return findByIdAndDelete(bookId);
+        return Book.findByIdAndDelete(bookId);
     }
 
     async markBookForSale(bookId, price) {
@@ -45,20 +51,22 @@ class BookService {
             throw new Error('Price must be greater than zero');
         }
 
-        return findByIdAndUpdate(bookId, { forSale: true, price }, { new: true });
+        return Book.findByIdAndUpdate(bookId, { forSale: true, price }, { new: true });
     }
 
     async removeBookFromSale(bookId) {
-        return findByIdAndUpdate(bookId, { forSale: false }, { new: true });
+        return Book.findByIdAndUpdate(bookId, { forSale: false }, { new: true });
     }
 
-    async getBooksForSale() {
-        return find({
+    async getBooksForSale({ limit = 20, skip = 0 } = {}) {
+        return Book.find({
             approved: true,
             forSale: true,
             copiesAvailable: { $gt: 0 },
-        });
+        })
+            .skip(skip)
+            .limit(limit)
+            .lean();
     }
 }
-
 export default new BookService();

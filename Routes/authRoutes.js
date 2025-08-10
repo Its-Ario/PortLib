@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { compare, hash } from 'bcrypt';
-import { sign } from 'jsonwebtoken';
-import User, { findOne } from '../Models/User';
-import auth from '../Middleware/authMiddleware';
+import pkg from 'jsonwebtoken';
+const { sign } = pkg;
+import User from '../Models/User.js';
+import auth from '../Middleware/authMiddleware.js';
 
 const router = Router();
 
@@ -20,7 +21,7 @@ router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
 
-        const user = await findOne({ username });
+        const user = await User.findOne({ username });
 
         if (!user) {
             return res.status(401).json({ message: 'Invalid credentials' });

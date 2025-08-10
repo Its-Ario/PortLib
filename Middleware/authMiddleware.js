@@ -1,5 +1,6 @@
-import { verify } from 'jsonwebtoken';
-import User from '../Models/User';
+import pkg from 'jsonwebtoken';
+const { verify } = pkg;
+import User from '../Models/User.js';
 
 async function verifyToken(req, res, next) {
     const authHeader = req.headers.authorization;
@@ -16,7 +17,7 @@ async function verifyToken(req, res, next) {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        if (decoded.tokenVersion != user.tokenVersion) {
+        if (decoded.tokenVersion !== user.tokenVersion) {
             return res.status(403).json({ message: 'Invalid or expired token' });
         }
 
@@ -35,18 +36,14 @@ function isAdmin(req, res, next) {
 }
 
 function isSuperUser(req, res, next) {
-    if (!req.user || !req.user.isSuperUser) {
+    if (!req.user?.isSuperUser) {
         return res.status(403).json({
             success: false,
             message: 'Super user access required',
         });
     }
-
     next();
 }
 
 export default verifyToken;
-const _isAdmin = isAdmin;
-export { _isAdmin as isAdmin };
-const _isSuperUser = isSuperUser;
-export { _isSuperUser as isSuperUser };
+export { isAdmin, isSuperUser };
