@@ -1,15 +1,19 @@
-const mongoose = require('mongoose');
+import { Schema, model } from 'mongoose';
 
-bookSchema = mongoose.Schema({
+const bookSchema = Schema({
     title: {type: String, required: true},
     isbn: { type: String, unique: true, required: true },
     author: {type: String, required: true},
     publicationYear: Number,
     copiesAvailable: { type: Number, default: 1 },
     approved: {type: Boolean, default: false},
-    submittedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true},
+    submittedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true},
     forSale: { type: Boolean, default: false },
     price: { type: Number }
-})
+});
 
-module.exports = mongoose.model('Book', bookSchema);
+bookSchema.index({ approved: 1, forSale: 1 });
+bookSchema.index({ title: 1 });
+bookSchema.index({ author: 1 });
+
+export default model('Book', bookSchema);

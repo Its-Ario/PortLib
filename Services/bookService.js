@@ -1,9 +1,9 @@
-const Book = require('../Models/Book');
-const mongoose = require('mongoose');
+import Book, { find, findByIdAndUpdate, findById, findByIdAndDelete } from '../Models/Book';
+import { Types } from 'mongoose';
 
 class BookService {
     async getApprovedBooks() {
-        return Book.find({ approved: true });
+        return find({ approved: true });
     }
     async addBook(bookData, userId) {
         const { title, isbn, author, publicationYear, copiesAvailable } = bookData;
@@ -15,18 +15,18 @@ class BookService {
             publicationYear,
             copiesAvailable,
             approved: false,
-            submittedBy: new mongoose.Types.ObjectId(String(userId))
+            submittedBy: new Types.ObjectId(String(userId))
         });
 
         return book.save();
     }
 
     async getPendingBooks() {
-        return Book.find({ approved: false }).populate("submittedBy", "username");
+        return find({ approved: false }).populate("submittedBy", "username");
     }
 
     async approveBook(bookId) {
-        return Book.findByIdAndUpdate(
+        return findByIdAndUpdate(
         bookId, 
         { approved: true }, 
         { new: true }
@@ -34,18 +34,18 @@ class BookService {
     }
 
     async getBookById(bookId) {
-        return Book.findById(bookId);
+        return findById(bookId);
     }
     
     async updateBook(bookId, updateData) {
-        return Book.findByIdAndUpdate(
+        return findByIdAndUpdate(
         bookId,
         updateData,
         { new: true }
         );
     }
     async deleteBook(bookId) {
-        return Book.findByIdAndDelete(bookId);
+        return findByIdAndDelete(bookId);
     }
 
     async markBookForSale(bookId, price) {
@@ -53,7 +53,7 @@ class BookService {
             throw new Error('Price must be greater than zero');
         }
         
-        return Book.findByIdAndUpdate(
+        return findByIdAndUpdate(
             bookId,
             { forSale: true, price },
             { new: true }
@@ -61,7 +61,7 @@ class BookService {
     }
 
     async removeBookFromSale(bookId) {
-        return Book.findByIdAndUpdate(
+        return findByIdAndUpdate(
             bookId,
             { forSale: false },
             { new: true }
@@ -69,7 +69,7 @@ class BookService {
     }
 
     async getBooksForSale() {
-        return Book.find({ 
+        return find({ 
             approved: true, 
             forSale: true,
             copiesAvailable: { $gt: 0 }
@@ -77,4 +77,4 @@ class BookService {
     }
 }
 
-module.exports = new BookService();
+export default new BookService();

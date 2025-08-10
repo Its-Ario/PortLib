@@ -1,13 +1,13 @@
-const express = require('express');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const User = require('../Models/User');
-const auth = require('../Middleware/authMiddleware');
+import { Router } from 'express';
+import { compare, hash } from 'bcrypt';
+import { sign } from 'jsonwebtoken';
+import User, { findOne } from '../Models/User';
+import auth from '../Middleware/authMiddleware';
 
-const router = express.Router();
+const router = Router();
 
 function generateToken(user) {
-    return jwt.sign(
+    return sign(
     { id: user._id, tokenVersion: user.tokenVersion },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
@@ -22,13 +22,13 @@ router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
         
-        const user = await User.findOne({ username });
+        const user = await findOne({ username });
         
         if (!user) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
         
-        const isMatch = await bcrypt.compare(password, user.password);
+        const isMatch = await compare(password, user.password);
         
         if (!isMatch) {
             return res.status(401).json({ message: 'Invalid credentials' });
@@ -54,7 +54,7 @@ router.post('/login', async (req, res) => {
 
 router.post('/register', async (req, res) => {
     const {name, email, username, password} = req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await hash(password, 10);
     const newUser = new User({
         name,
         email,
@@ -71,14 +71,14 @@ router.patch("/changepassword", auth, async (req, res) => {
     const user = req.user;
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    const isMatch = await compare(currentPassword, user.password);
     if (!isMatch) return res.status(403).json({ error: "Current password incorrect" });
 
-    user.password = await bcrypt.hash(newPassword, 10);
+    user.password = await hash(newPassword, 10);
     user.tokenVersion += 1;
     await user.save();
 
     res.json({ message: "Password updated successfully" });
 });
 
-module.exports = router;
+export default router;

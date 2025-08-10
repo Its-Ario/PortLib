@@ -1,5 +1,5 @@
-const jwt = require('jsonwebtoken');
-const User = require('../Models/User');
+import { verify } from 'jsonwebtoken';
+import User from '../Models/User';
 
 async function verifyToken(req, res, next) {
     const authHeader = req.headers.authorization;
@@ -10,7 +10,7 @@ async function verifyToken(req, res, next) {
     const token = authHeader.split(" ")[1];
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = verify(token, process.env.JWT_SECRET);
 
         const user = await User.findById(decoded.id);
         if (!user) {
@@ -22,7 +22,7 @@ async function verifyToken(req, res, next) {
 
         req.user = user;
         next();
-    } catch (err) {
+    } catch {
         return res.status(403).json({ message: "Invalid or expired token" });
     }
 }
@@ -45,6 +45,8 @@ function isSuperUser(req, res, next) {
     next();
 };
 
-module.exports = verifyToken
-module.exports.isAdmin = isAdmin
-module.exports.isSuperUser = isSuperUser
+export default verifyToken
+const _isAdmin = isAdmin;
+export { _isAdmin as isAdmin };
+const _isSuperUser = isSuperUser;
+export { _isSuperUser as isSuperUser };

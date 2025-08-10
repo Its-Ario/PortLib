@@ -1,11 +1,11 @@
-const Book = require('../Models/Book');
-const User = require('../Models/User');
-const Transaction = require('../Models/Transaction');
+import { findById, findByIdAndUpdate } from '../Models/Book';
+import { findById as _findById, findByIdAndUpdate as _findByIdAndUpdate } from '../Models/User';
+import Transaction, { findById as __findById, find } from '../Models/Transaction';
 
 class LibraryService {
     async borrowBook(bookId, userId, durationDays = 14) {
-        const book = await Book.findById(bookId);
-        const user = await User.findById(userId);
+        const book = await findById(bookId);
+        const user = await _findById(userId);
 
         if (!book || !user) {
         throw new Error('Book or user not found');
@@ -35,7 +35,7 @@ class LibraryService {
     }
 
     async returnBook(transactionId) {
-        const transaction = await Transaction.findById(transactionId)
+        const transaction = await __findById(transactionId)
         .populate('book')
         .populate('user');
 
@@ -54,7 +54,7 @@ class LibraryService {
         const daysLate = Math.floor((today - transaction.dueDate) / (1000 * 60 * 60 * 24));
         const fine = daysLate * 0.50;
         
-        await User.findByIdAndUpdate(transaction.user._id, {
+        await _findByIdAndUpdate(transaction.user._id, {
             $inc: { balance: -fine }
         });
         }
@@ -63,7 +63,7 @@ class LibraryService {
         transaction.returnDate = today;
         await transaction.save();
 
-        await Book.findByIdAndUpdate(transaction.book._id, {
+        await findByIdAndUpdate(transaction.book._id, {
         $inc: { copiesAvailable: 1 }
         });
 
@@ -71,8 +71,8 @@ class LibraryService {
     }
 
     async sellBook(bookId, userId) {
-        const book = await Book.findById(bookId);
-        const user = await User.findById(userId);
+        const book = await findById(bookId);
+        const user = await _findById(userId);
 
         if (!book || !user) {
         throw new Error('Book or user not found');
@@ -106,20 +106,20 @@ class LibraryService {
     }
 
     async getUserTransactions(userId) {
-        return Transaction.find({ user: userId })
+        return find({ user: userId })
         .populate('book')
         .sort({ createdAt: -1 });
     }
 
     async getBookTransactions(bookId) {
-        return Transaction.find({ book: bookId })
+        return find({ book: bookId })
         .populate('user')
         .sort({ createdAt: -1 });
     }
 
     async getOverdueTransactions() {
         const today = new Date();
-        return Transaction.find({
+        return find({
         type: 'borrow',
         status: 'active',
         dueDate: { $lt: today }
@@ -133,7 +133,7 @@ class LibraryService {
             throw new Error('Amount must be positive');
         }
         
-        const user = await User.findByIdAndUpdate(
+        const user = await _findByIdAndUpdate(
             userId,
             { $inc: { balance: amount } },
             { new: true }
@@ -147,11 +147,11 @@ class LibraryService {
     }
 
     async getAllTransactions() {
-        return Transaction.find()
+        return find()
             .populate('book')
             .populate('user', '-password')
             .sort({ createdAt: -1 });
     }
 }
 
-module.exports = new LibraryService();
+export default new LibraryService();

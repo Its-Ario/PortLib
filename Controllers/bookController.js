@@ -1,8 +1,8 @@
-const BookService = require('../Services/bookService');
+import bookService from '../Services/bookService';
 
-exports.listBooks = async (req, res) => {
+export async function listBooks(req, res) {
     try {
-        const books = await BookService.getApprovedBooks();
+        const books = await bookService.getApprovedBooks();
         res.json(books);
     } catch (error) {
         res.status(500).json({
@@ -10,11 +10,11 @@ exports.listBooks = async (req, res) => {
         message: error.message
         });
     }
-};
+}
 
-exports.addBook = async (req, res) => {
+export async function addBook(req, res) {
     try {
-        const savedBook = await BookService.addBook(req.body, req.user.id);
+        const savedBook = await bookService.addBook(req.body, req.user.id);
         res.json(savedBook);
     } catch (error) {
         res.status(400).json({
@@ -22,11 +22,11 @@ exports.addBook = async (req, res) => {
         message: error.message
         });
     }
-};
+}
 
-exports.getPendingBooks = async (req, res) => {
+export async function getPendingBooks(req, res) {
     try {
-        const pendingBooks = await BookService.getPendingBooks();
+        const pendingBooks = await bookService.getPendingBooks();
         res.json(pendingBooks);
     } catch (error) {
         res.status(500).json({
@@ -34,11 +34,11 @@ exports.getPendingBooks = async (req, res) => {
         message: error.message
         });
     }
-};
+}
 
-exports.approveBook = async (req, res) => {
+export async function approveBook(req, res) {
     try {
-        const updated = await BookService.approveBook(req.params.id);
+        const updated = await bookService.approveBook(req.params.id);
         res.json(updated);
     } catch (error) {
         res.status(400).json({
@@ -46,11 +46,11 @@ exports.approveBook = async (req, res) => {
         message: error.message
         });
     }
-};
+}
 
-exports.getBookById = async (req, res) => {
+export async function getBookById(req, res) {
     try {
-        const book = await BookService.getBookById(req.params.id);
+        const book = await bookService.getBookById(req.params.id);
         
         if (!book) {
         return res.status(404).json({
@@ -66,11 +66,11 @@ exports.getBookById = async (req, res) => {
         message: error.message
         });
     }
-};
+}
 
-exports.updateBook = async (req, res) => {
+export async function updateBook(req, res) {
     try {
-        const updated = await BookService.updateBook(req.params.id, req.body);
+        const updated = await bookService.updateBook(req.params.id, req.body);
         
         if (!updated) {
         return res.status(404).json({
@@ -86,11 +86,11 @@ exports.updateBook = async (req, res) => {
         message: error.message
         });
     }
-};
+}
 
-exports.deleteBook = async (req, res) => {
+export async function deleteBook(req, res) {
     try {
-        const deleted = await BookService.deleteBook(req.params.id);
+        const deleted = await bookService.deleteBook(req.params.id);
         
         if (!deleted) {
         return res.status(404).json({
@@ -109,12 +109,12 @@ exports.deleteBook = async (req, res) => {
         message: error.message
         });
     }
-};
+}
 
-exports.markBookForSale = async (req, res) => {
+export async function markBookForSale(req, res) {
     try {
         const { price } = req.body;
-        const updated = await BookService.markBookForSale(req.params.id, price);
+        const updated = await bookService.markBookForSale(req.params.id, price);
         
         if (!updated) {
         return res.status(404).json({
@@ -130,11 +130,11 @@ exports.markBookForSale = async (req, res) => {
         message: error.message
         });
     }
-};
+}
 
-exports.removeBookFromSale = async (req, res) => {
+export async function removeBookFromSale(req, res) {
     try {
-        const updated = await BookService.removeBookFromSale(req.params.id);
+        const updated = await bookService.removeBookFromSale(req.params.id);
         
         if (!updated) {
         return res.status(404).json({
@@ -150,11 +150,11 @@ exports.removeBookFromSale = async (req, res) => {
         message: error.message
         });
     }
-};
+}
 
-exports.getBooksForSale = async (req, res) => {
+export async function getBooksForSale(req, res) {
     try {
-        const books = await BookService.getBooksForSale();
+        const books = await bookService.getBooksForSale();
         res.json(books);
     } catch (error) {
         res.status(500).json({
@@ -162,4 +162,4 @@ exports.getBooksForSale = async (req, res) => {
         message: error.message
         });
     }
-};
+}

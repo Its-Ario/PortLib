@@ -1,8 +1,8 @@
-const mongoose = require('mongoose');
+import { Schema, model } from 'mongoose';
 
-const transactionSchema = mongoose.Schema({
-    book: { type: mongoose.Schema.Types.ObjectId, ref: 'Book', required: true },
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+const transactionSchema = Schema({
+    book: { type: Schema.Types.ObjectId, ref: 'Book', required: true },
+    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     type: { type: String, enum: ['borrow', 'purchase'], required: true },
     startDate: { type: Date, default: Date.now },
     dueDate: { type: Date },
@@ -15,4 +15,8 @@ const transactionSchema = mongoose.Schema({
     price: { type: Number },
 }, { timestamps: true });
 
-module.exports = mongoose.model('Transaction', transactionSchema);
+transactionSchema.index({ user: 1, status: 1 });
+transactionSchema.index({ book: 1, status: 1 });
+transactionSchema.index({ dueDate: 1 });
+
+export default model('Transaction', transactionSchema);

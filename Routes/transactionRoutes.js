@@ -1,21 +1,21 @@
-const express = require('express');
-const router = express.Router();
-const transactionController = require('../Controllers/transactionController');
-const auth = require('../Middleware/authMiddleware');
+import { Router } from 'express';
+const router = Router();
+import { borrowBook, returnBook, purchaseBook, getUserTransactions, getBookTransactions, addFunds, getOverdueTransactions, getAllTransactions } from '../Controllers/transactionController';
+import auth, { isAdmin } from '../Middleware/authMiddleware';
 
 router.use(auth);
 
-router.post('/borrow', transactionController.borrowBook);
-router.put('/return/:transactionId', transactionController.returnBook);
+router.post('/borrow', borrowBook);
+router.put('/return/:transactionId', returnBook);
 
-router.post('/purchase', transactionController.purchaseBook);
+router.post('/purchase', purchaseBook);
 
-router.get('/my-transactions', transactionController.getUserTransactions);
-router.get('/book/:bookId', transactionController.getBookTransactions);
+router.get('/my-transactions', getUserTransactions);
+router.get('/book/:bookId', getBookTransactions);
 
-router.post('/add-funds', transactionController.addFunds);
+router.post('/add-funds', addFunds);
 
-router.get('/overdue', auth.isAdmin, transactionController.getOverdueTransactions);
-router.get('/all', auth.isAdmin, transactionController.getAllTransactions);
+router.get('/overdue', isAdmin, getOverdueTransactions);
+router.get('/all', isAdmin, getAllTransactions);
 
-module.exports = router;
+export default router;

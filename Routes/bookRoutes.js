@@ -1,23 +1,23 @@
-const express = require('express');
-const auth = require('../Middleware/authMiddleware');
-const bookController = require('../Controllers/bookController');
+import { Router } from 'express';
+import auth, { isAdmin } from '../Middleware/authMiddleware';
+import { addBook, getPendingBooks, approveBook, updateBook, deleteBook, markBookForSale, removeBookFromSale, listBooks, getBooksForSale, getBookById } from '../Controllers/bookController';
 
-const router = express.Router();
+const router = Router();
 
 router.use(auth);
 
-router.post('/add', auth.isAdmin, bookController.addBook);
+router.post('/add', isAdmin, addBook);
 
-router.get('/pending', auth.isAdmin, bookController.getPendingBooks);
-router.patch('/approve/:id', auth.isAdmin, bookController.approveBook);
-router.put('/:id', auth.isAdmin, bookController.updateBook);
-router.delete('/:id', auth.isAdmin, bookController.deleteBook);
+router.get('/pending', isAdmin, getPendingBooks);
+router.patch('/approve/:id', isAdmin, approveBook);
+router.put('/:id', isAdmin, updateBook);
+router.delete('/:id', isAdmin, deleteBook);
 
-router.patch('/:id/for-sale', auth.isAdmin, bookController.markBookForSale);
-router.patch('/:id/remove-from-sale', auth.isAdmin, bookController.removeBookFromSale);
+router.patch('/:id/for-sale', isAdmin, markBookForSale);
+router.patch('/:id/remove-from-sale', isAdmin, removeBookFromSale);
 
-router.get('/list', bookController.listBooks);
-router.get('/for-sale', bookController.getBooksForSale);
-router.get('/:id', bookController.getBookById);
+router.get('/list', listBooks);
+router.get('/for-sale', getBooksForSale);
+router.get('/:id', getBookById);
 
-module.exports = router;
+export default router;

@@ -1,26 +1,24 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const http = require('http');
-const dotenv = require('dotenv');
-const cors = require('cors');
-const WebSocketServer = require('./websocketServer');
+import express, { json } from 'express';
+import { connection, connect } from 'mongoose';
+import { createServer } from 'http';
+import { config } from 'dotenv';
+import cors from 'cors';
+import WebSocketServer from './websocketServer';
 
-dotenv.config();
+config();
 
 const app = express();
-app.use(express.json());
+app.use(json());
 
-// Add CORS middleware to allow frontend requests
 app.use(cors());
 
-// Serve static files from public directory
 app.use(express.static('public'));
 
-const mainRoutes = require('./Routes/mainRoutes');
-const adminRoutes = require('./Routes/adminRoutes');
-const authRoutes = require('./Routes/authRoutes');
-const bookRoutes = require('./Routes/bookRoutes');
-const transactionRoutes = require('./Routes/transactionRoutes');
+import mainRoutes from './Routes/mainRoutes';
+import adminRoutes from './Routes/adminRoutes';
+import authRoutes from './Routes/authRoutes';
+import bookRoutes from './Routes/bookRoutes';
+import transactionRoutes from './Routes/transactionRoutes';
 
 app.use('/', mainRoutes);
 app.use('/', authRoutes);
@@ -28,57 +26,37 @@ app.use('/admin', adminRoutes);
 app.use('/book', bookRoutes);
 app.use('/transaction', transactionRoutes);
 
-// Create HTTP server
-const server = http.createServer(app);
+const server = createServer(app);
 
-// Initialize WebSocketServer with options
 const wsServer = new WebSocketServer(server, {
     jwtSecret: process.env.JWT_SECRET || 'your_jwt_secret_key_change_this',
-    pingInterval: 30000,  // Send ping every 30 seconds
-    pingTimeout: 60000    // Connection timeout after 60 seconds without response
+    pingInterval: 30000,
+    pingTimeout: 60000
 });
 
-// WebSocket status endpoint
 app.get('/ws-status', (req, res) => {
     res.status(200).json(wsServer.getStatus());
 });
 
-// Health check endpoint
 app.get('/health', (req, res) => {
     res.status(200).json({
         status: 'ok',
-        mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+        mongodb: connection.readyState === 1 ? 'connected' : 'disconnected',
         websocket: wsServer.getStatus(),
         uptime: process.uptime()
     });
 });
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI)
+connect(process.env.MONGO_URI)
     .then(() => console.log('✅ MongoDB connected'))
     .catch((err) => console.error('❌ MongoDB connection error:', err));
 
-// Start the server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`🚀 Server is running on http://localhost:${PORT}`);
     console.log(`🔌 WebSocket server is active on ws://localhost:${PORT}`);
 });
 
-// Graceful shutdown
-// process.on('SIGINT', function() {
-//     console.log('Shutting down server...');
-//     wsServer.close();
-//     server.close(() => {
-//         console.log('HTTP server closed');
-//         mongoose.connection.close(false, () => {
-//             console.log('MongoDB connection closed');
-//             process.exit(0);
-//         });
-//     });
-// });
-
-// Error handling
 process.on('uncaughtException', (err) => {
     console.error('Uncaught exception:', err);
 });

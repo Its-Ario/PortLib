@@ -1,11 +1,11 @@
-const LibraryService = require('../Services/libraryService');
+import libraryService from '../Services/libraryService';
 
-exports.borrowBook = async (req, res) => {
+export async function borrowBook(req, res) {
     try {
         const { bookId, durationDays } = req.body;
         const userId = req.user.id;
         
-        const transaction = await LibraryService.borrowBook(bookId, userId, durationDays);
+        const transaction = await libraryService.borrowBook(bookId, userId, durationDays);
         
         res.status(200).json({
         success: true,
@@ -17,13 +17,13 @@ exports.borrowBook = async (req, res) => {
         message: error.message
         });
     }
-};
+}
 
-exports.returnBook = async (req, res) => {
+export async function returnBook(req, res) {
     try {
         const { transactionId } = req.params;
         
-        const transaction = await LibraryService.returnBook(transactionId);
+        const transaction = await libraryService.returnBook(transactionId);
         
         res.status(200).json({
         success: true,
@@ -35,14 +35,14 @@ exports.returnBook = async (req, res) => {
         message: error.message
         });
     }
-};
+}
 
-exports.purchaseBook = async (req, res) => {
+export async function purchaseBook(req, res) {
     try {
         const { bookId } = req.body;
         const userId = req.user.id;
         
-        const transaction = await LibraryService.sellBook(bookId, userId);
+        const transaction = await libraryService.sellBook(bookId, userId);
         
         res.status(200).json({
         success: true,
@@ -54,13 +54,13 @@ exports.purchaseBook = async (req, res) => {
         message: error.message
         });
     }
-};
+}
 
-exports.getUserTransactions = async (req, res) => {
+export async function getUserTransactions(req, res) {
     try {
         const userId = req.user.id;
         
-        const transactions = await LibraryService.getUserTransactions(userId);
+        const transactions = await libraryService.getUserTransactions(userId);
         
         res.status(200).json({
         success: true,
@@ -72,13 +72,13 @@ exports.getUserTransactions = async (req, res) => {
         message: error.message
         });
     }
-};
+}
 
-exports.getBookTransactions = async (req, res) => {
+export async function getBookTransactions(req, res) {
     try {
         const { bookId } = req.params;
         
-        const transactions = await LibraryService.getBookTransactions(bookId);
+        const transactions = await libraryService.getBookTransactions(bookId);
         
         res.status(200).json({
         success: true,
@@ -90,12 +90,11 @@ exports.getBookTransactions = async (req, res) => {
         message: error.message
         });
     }
-};
+}
 
-exports.getOverdueTransactions = async (req, res) => {
+export async function getOverdueTransactions(req, res) {
     try {
-        // This should be limited to admin users only
-        const transactions = await LibraryService.getOverdueTransactions();
+        const transactions = await libraryService.getOverdueTransactions();
         
         res.status(200).json({
         success: true,
@@ -107,14 +106,14 @@ exports.getOverdueTransactions = async (req, res) => {
         message: error.message
         });
     }
-};
+}
 
-exports.addFunds = async (req, res) => {
+export async function addFunds(req, res) {
     try {
         const { amount } = req.body;
         const userId = req.user.id;
         
-        const user = await LibraryService.addUserFunds(userId, amount);
+        const user = await libraryService.addUserFunds(userId, amount);
         
         res.status(200).json({
         success: true,
@@ -128,11 +127,11 @@ exports.addFunds = async (req, res) => {
         message: error.message
         });
     }
-};
+}
 
-exports.getAllTransactions = async (req, res) => {
+export async function getAllTransactions(req, res) {
     try {
-        const transactions = await LibraryService.getAllTransactions();
+        const transactions = await libraryService.getAllTransactions();
         
         res.status(200).json({
         success: true,
@@ -144,4 +143,4 @@ exports.getAllTransactions = async (req, res) => {
         message: error.message
         });
     }
-};
+}

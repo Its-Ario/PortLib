@@ -1,12 +1,12 @@
-const WebSocket = require('ws');
-const jwt = require('jsonwebtoken');
-const User = require('./Models/User');
+import { Server, OPEN, CONNECTING } from 'ws';
+import { verify } from 'jsonwebtoken';
+import User from './Models/User';
 
 class WebSocketServer {
     constructor(server, options = {}) {
         this.jwtSecret = options.jwtSecret || process.env.JWT_SECRET || 'jwt_secret';
         
-        this.wss = new WebSocket.Server({ 
+        this.wss = new Server({ 
             server: server,
             verifyClient: this._verifyClient.bind(this),
             clientTracking: true,
@@ -33,7 +33,7 @@ class WebSocketServer {
             }
             
             try {
-                const decoded = jwt.verify(token, this.jwtSecret);
+                const decoded = verify(token, this.jwtSecret);
                                 
                 if (!decoded.id) {
                     console.error('Token missing id field');
@@ -101,7 +101,7 @@ class WebSocketServer {
             if (this.userLocations.size > 0) {
                 const activeUsers = [];
                 
-                this.userLocations.forEach((userData, activeUserId) => {
+                this.userLocations.forEach((userData) => {
                     if (userData.lat === undefined || userData.lng === undefined) return;
                     
                     if (userData.userId === userId) {
@@ -285,7 +285,7 @@ class WebSocketServer {
             this.broadcastToAll(actionData);
         } else {
             const selfClient = this.clients.get(userId);
-            if (selfClient && selfClient.readyState === WebSocket.OPEN) {
+            if (selfClient && selfClient.readyState === OPEN) {
                 try {
                     const selfData = {...actionData, isSelf: true};
                     selfClient.send(JSON.stringify(selfData));
@@ -358,14 +358,14 @@ class WebSocketServer {
         const deadClients = [];
         
         this.clients.forEach((client, clientId) => {
-            if (client.readyState === WebSocket.OPEN && filterFunction(client)) {
+            if (client.readyState === OPEN && filterFunction(client)) {
                 try {
                     client.send(message);
                 } catch (err) {
                     console.error(`Error sending to client ${clientId}:`, err);
                     deadClients.push(clientId);
                 }
-            } else if (client.readyState !== WebSocket.OPEN && client.readyState !== WebSocket.CONNECTING) {
+            } else if (client.readyState !== OPEN && client.readyState !== CONNECTING) {
                 deadClients.push(clientId);
             }
         });
@@ -380,7 +380,7 @@ class WebSocketServer {
         const deadClients = [];
         
         this.clients.forEach((client, clientId) => {
-            if (client.readyState === WebSocket.OPEN) {
+            if (client.readyState === OPEN) {
                 try {
                     const isSelf = data.userId === clientId;
                     if (isSelf) {
@@ -393,7 +393,7 @@ class WebSocketServer {
                     console.error(`Error sending to client ${clientId}:`, err);
                     deadClients.push(clientId);
                 }
-            } else if (client.readyState !== WebSocket.OPEN && client.readyState !== WebSocket.CONNECTING) {
+            } else if (client.readyState !== OPEN && client.readyState !== CONNECTING) {
                 deadClients.push(clientId);
             }
         });
@@ -482,7 +482,7 @@ class WebSocketServer {
     }
     
     close() {
-        this.pendingLocationUpdates.forEach((update, userId) => {
+        this.pendingLocationUpdates.forEach((update) => {
             if (update && update.timeout) {
                 clearTimeout(update.timeout);
             }
@@ -505,4 +505,4 @@ class WebSocketServer {
     }
 }
 
-module.exports = WebSocketServer;
+export default WebSocketServer;
