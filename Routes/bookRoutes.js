@@ -1,6 +1,17 @@
 import { Router } from 'express';
 import auth, { isAdmin } from '../Middleware/authMiddleware';
-import { addBook, getPendingBooks, approveBook, updateBook, deleteBook, markBookForSale, removeBookFromSale, listBooks, getBooksForSale, getBookById } from '../Controllers/bookController';
+import {
+    addBook,
+    getPendingBooks,
+    approveBook,
+    updateBook,
+    deleteBook,
+    markBookForSale,
+    removeBookFromSale,
+    listBooks,
+    getBooksForSale,
+    getBookById,
+} from '../Controllers/bookController';
 
 const router = Router();
 

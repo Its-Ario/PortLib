@@ -15,34 +15,26 @@ class BookService {
             publicationYear,
             copiesAvailable,
             approved: false,
-            submittedBy: new Types.ObjectId(String(userId))
+            submittedBy: new Types.ObjectId(String(userId)),
         });
 
         return book.save();
     }
 
     async getPendingBooks() {
-        return find({ approved: false }).populate("submittedBy", "username");
+        return find({ approved: false }).populate('submittedBy', 'username');
     }
 
     async approveBook(bookId) {
-        return findByIdAndUpdate(
-        bookId, 
-        { approved: true }, 
-        { new: true }
-        );
+        return findByIdAndUpdate(bookId, { approved: true }, { new: true });
     }
 
     async getBookById(bookId) {
         return findById(bookId);
     }
-    
+
     async updateBook(bookId, updateData) {
-        return findByIdAndUpdate(
-        bookId,
-        updateData,
-        { new: true }
-        );
+        return findByIdAndUpdate(bookId, updateData, { new: true });
     }
     async deleteBook(bookId) {
         return findByIdAndDelete(bookId);
@@ -52,27 +44,19 @@ class BookService {
         if (!price || price <= 0) {
             throw new Error('Price must be greater than zero');
         }
-        
-        return findByIdAndUpdate(
-            bookId,
-            { forSale: true, price },
-            { new: true }
-        );
+
+        return findByIdAndUpdate(bookId, { forSale: true, price }, { new: true });
     }
 
     async removeBookFromSale(bookId) {
-        return findByIdAndUpdate(
-            bookId,
-            { forSale: false },
-            { new: true }
-        );
+        return findByIdAndUpdate(bookId, { forSale: false }, { new: true });
     }
 
     async getBooksForSale() {
-        return find({ 
-            approved: true, 
+        return find({
+            approved: true,
             forSale: true,
-            copiesAvailable: { $gt: 0 }
+            copiesAvailable: { $gt: 0 },
         });
     }
 }

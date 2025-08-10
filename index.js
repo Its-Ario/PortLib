@@ -31,7 +31,7 @@ const server = createServer(app);
 const wsServer = new WebSocketServer(server, {
     jwtSecret: process.env.JWT_SECRET || 'your_jwt_secret_key_change_this',
     pingInterval: 30000,
-    pingTimeout: 60000
+    pingTimeout: 60000,
 });
 
 app.get('/ws-status', (req, res) => {
@@ -43,7 +43,7 @@ app.get('/health', (req, res) => {
         status: 'ok',
         mongodb: connection.readyState === 1 ? 'connected' : 'disconnected',
         websocket: wsServer.getStatus(),
-        uptime: process.uptime()
+        uptime: process.uptime(),
     });
 });
 

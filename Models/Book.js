@@ -1,15 +1,15 @@
 import { Schema, model } from 'mongoose';
 
 const bookSchema = Schema({
-    title: {type: String, required: true},
+    title: { type: String, required: true },
     isbn: { type: String, unique: true, required: true },
-    author: {type: String, required: true},
+    author: { type: String, required: true },
     publicationYear: Number,
     copiesAvailable: { type: Number, default: 1 },
-    approved: {type: Boolean, default: false},
-    submittedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true},
+    approved: { type: Boolean, default: false },
+    submittedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     forSale: { type: Boolean, default: false },
-    price: { type: Number }
+    price: { type: Number },
 });
 
 bookSchema.index({ approved: 1, forSale: 1 });

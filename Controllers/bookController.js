@@ -6,8 +6,8 @@ export async function listBooks(req, res) {
         res.json(books);
     } catch (error) {
         res.status(500).json({
-        success: false,
-        message: error.message
+            success: false,
+            message: error.message,
         });
     }
 }
@@ -18,8 +18,8 @@ export async function addBook(req, res) {
         res.json(savedBook);
     } catch (error) {
         res.status(400).json({
-        success: false,
-        message: error.message
+            success: false,
+            message: error.message,
         });
     }
 }
@@ -30,8 +30,8 @@ export async function getPendingBooks(req, res) {
         res.json(pendingBooks);
     } catch (error) {
         res.status(500).json({
-        success: false,
-        message: error.message
+            success: false,
+            message: error.message,
         });
     }
 }
@@ -42,8 +42,8 @@ export async function approveBook(req, res) {
         res.json(updated);
     } catch (error) {
         res.status(400).json({
-        success: false,
-        message: error.message
+            success: false,
+            message: error.message,
         });
     }
 }
@@ -51,19 +51,19 @@ export async function approveBook(req, res) {
 export async function getBookById(req, res) {
     try {
         const book = await bookService.getBookById(req.params.id);
-        
+
         if (!book) {
-        return res.status(404).json({
-            success: false,
-            message: 'Book not found'
-        });
+            return res.status(404).json({
+                success: false,
+                message: 'Book not found',
+            });
         }
-        
+
         res.json(book);
     } catch (error) {
         res.status(500).json({
-        success: false,
-        message: error.message
+            success: false,
+            message: error.message,
         });
     }
 }
@@ -71,19 +71,19 @@ export async function getBookById(req, res) {
 export async function updateBook(req, res) {
     try {
         const updated = await bookService.updateBook(req.params.id, req.body);
-        
+
         if (!updated) {
-        return res.status(404).json({
-            success: false,
-            message: 'Book not found'
-        });
+            return res.status(404).json({
+                success: false,
+                message: 'Book not found',
+            });
         }
-        
+
         res.json(updated);
     } catch (error) {
         res.status(400).json({
-        success: false,
-        message: error.message
+            success: false,
+            message: error.message,
         });
     }
 }
@@ -91,22 +91,22 @@ export async function updateBook(req, res) {
 export async function deleteBook(req, res) {
     try {
         const deleted = await bookService.deleteBook(req.params.id);
-        
+
         if (!deleted) {
-        return res.status(404).json({
-            success: false,
-            message: 'Book not found'
-        });
+            return res.status(404).json({
+                success: false,
+                message: 'Book not found',
+            });
         }
-        
+
         res.json({
-        success: true,
-        message: 'Book deleted successfully'
+            success: true,
+            message: 'Book deleted successfully',
         });
     } catch (error) {
         res.status(500).json({
-        success: false,
-        message: error.message
+            success: false,
+            message: error.message,
         });
     }
 }
@@ -115,19 +115,19 @@ export async function markBookForSale(req, res) {
     try {
         const { price } = req.body;
         const updated = await bookService.markBookForSale(req.params.id, price);
-        
+
         if (!updated) {
-        return res.status(404).json({
-            success: false,
-            message: 'Book not found'
-        });
+            return res.status(404).json({
+                success: false,
+                message: 'Book not found',
+            });
         }
-        
+
         res.json(updated);
     } catch (error) {
         res.status(400).json({
-        success: false,
-        message: error.message
+            success: false,
+            message: error.message,
         });
     }
 }
@@ -135,19 +135,19 @@ export async function markBookForSale(req, res) {
 export async function removeBookFromSale(req, res) {
     try {
         const updated = await bookService.removeBookFromSale(req.params.id);
-        
+
         if (!updated) {
-        return res.status(404).json({
-            success: false,
-            message: 'Book not found'
-        });
+            return res.status(404).json({
+                success: false,
+                message: 'Book not found',
+            });
         }
-        
+
         res.json(updated);
     } catch (error) {
         res.status(400).json({
-        success: false,
-        message: error.message
+            success: false,
+            message: error.message,
         });
     }
 }
@@ -158,8 +158,8 @@ export async function getBooksForSale(req, res) {
         res.json(books);
     } catch (error) {
         res.status(500).json({
-        success: false,
-        message: error.message
+            success: false,
+            message: error.message,
         });
     }
 }
