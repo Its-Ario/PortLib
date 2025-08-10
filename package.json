@@ -5,6 +5,7 @@
     "main": "server.js",
     "type": "module",
     "scripts": {
+        "test": "jest",
         "start": "node server.js",
         "dev": "nodemon server.js",
         "lint": "eslint .",
@@ -35,6 +36,8 @@
         "eslint-plugin-prettier": "^5.5.4",
         "globals": "^16.3.0",
         "husky": "^9.1.7",
+        "jest": "^30.0.5",
+        "mockingoose": "^2.16.2",
         "nodemon": "^3.1.10",
         "prettier": "^3.6.2"
     }
