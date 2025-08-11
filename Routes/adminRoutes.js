@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { hash } from 'bcrypt';
-import User from '../Models/User.js';
+import userService from '../Services/userService.js';
 import auth, { isAdmin } from '../Middleware/authMiddleware.js';
 
 const router = Router();
@@ -13,25 +13,30 @@ router.get('/', (req, res) => {
 router.post('/adduser', async (req, res) => {
     const { password, ...rest } = req.body;
     const hashedPassword = await hash(password, 10);
-    const newUser = new User({
+    const newUser = new userService.registerUser({
         ...rest,
-        password: hashedPassword,
+        passwordHash: hashedPassword,
     });
     const savedUser = await newUser.save();
     res.status(201).json(savedUser);
 });
 
-router.patch('/togglesuperuser/:id', async (req, res) => {
-    const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ error: 'User not found' });
+router.patch('/changerole/:id', async (req, res) => {
+    const user = await userService.getUserProfile(req.params.id);
+    const newRole = req.body.role;
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-    const updatedUser = await User.findByIdAndUpdate(
-        req.params.id,
-        { isSuperUser: !user.isSuperUser },
-        { new: true }
-    );
+    const validRoles = ['ADMIN', 'MEMBER'];
+    if (!validRoles.includes(newRole)) {
+        return res.status('400').json({
+            success: false,
+            message: `Invalid role. Must be one of: ${validRoles.join(', ')}`,
+        });
+    }
 
-    res.json({ message: 'SuperUser status toggled', user: updatedUser });
+    const updatedUser = await userService.updateRole(req.params.id, newRole);
+
+    res.json({ success: true, message: 'Role updated successfuly', role: updatedUser.role });
 });
 
 export default router;

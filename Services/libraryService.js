@@ -1,13 +1,13 @@
-import Book from '../Models/Book.js';
-import User from '../Models/User.js';
 import Transaction from '../Models/Transaction.js';
+import bookService from './bookService.js';
+import userService from './userService.js';
 
 class LibraryService {
     async borrowBook(bookId, userId, durationDays = 14) {
-        const book = await Book.findById(bookId);
+        const book = await bookService.getBookById(bookId);
         if (!book) throw new Error('Book not found');
 
-        const user = await User.findById(userId);
+        const user = await userService.getUserProfile(userId);
         if (!user) throw new Error('User not found');
 
         if (book.copiesAvailable <= 0) {
@@ -27,8 +27,7 @@ class LibraryService {
         });
 
         await transaction.save();
-        book.copiesAvailable -= 1;
-        await book.save();
+        await bookService.updateBookCopies(bookId, -1);
 
         return transaction;
     }
@@ -56,35 +55,31 @@ class LibraryService {
             );
             const fine = daysLate * 0.5;
 
-            await User.findByIdAndUpdate(transaction.user._id, {
-                $inc: { balance: -fine },
-            });
+            await userService.updateUserFunds(transaction.user._id, -fine);
         }
 
         transaction.status = 'completed';
         transaction.returnDate = today;
         await transaction.save();
 
-        await Book.findByIdAndUpdate(transaction.book._id, {
-            $inc: { copiesAvailable: 1 },
-        });
+        await bookService.updateBookCopies(transaction.book._id, 1);
 
         return transaction;
     }
 
     async sellBook(bookId, userId) {
-        const book = await Book.findById(bookId);
+        const book = await bookService.getBookById(bookId);
         if (!book) throw new Error('Book not found');
 
-        const user = await User.findById(userId);
+        const user = await userService.getUserProfile(userId);
         if (!user) throw new Error('User not found');
 
         if (book.copiesAvailable <= 0 || !book.forSale) {
-            throw new Error('Book is not available for sale');
+            throw new Error('Book is not available for sale.');
         }
 
         if (user.balance < book.price) {
-            throw new Error('Insufficient funds');
+            throw new Error('Insufficient funds.');
         }
 
         const transaction = new Transaction({
@@ -97,12 +92,9 @@ class LibraryService {
 
         await transaction.save();
 
-        book.copiesAvailable -= 1;
-        await book.save();
+        await bookService.updateBookCopies(bookId, -1);
 
-        user.balance -= book.price;
-        await user.save();
-
+        userService.updateUserFunds(userId, -book.price);
         return transaction;
     }
 
@@ -126,28 +118,10 @@ class LibraryService {
             .lean();
     }
 
-    async addUserFunds(userId, amount) {
-        if (amount <= 0) {
-            throw new Error('Amount must be positive');
-        }
-
-        const user = await User.findByIdAndUpdate(
-            userId,
-            { $inc: { balance: amount } },
-            { new: true }
-        );
-
-        if (!user) {
-            throw new Error('User not found');
-        }
-
-        return user;
-    }
-
     async getAllTransactions() {
         return Transaction.find()
             .populate('book')
-            .populate('user', '-password')
+            .populate('user', '-passwordHash')
             .sort({ createdAt: -1 })
             .lean();
     }

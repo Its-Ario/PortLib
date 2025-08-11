@@ -1,6 +1,6 @@
 import pkg from 'jsonwebtoken';
 const { verify } = pkg;
-import User from '../Models/User.js';
+import userService from '../Services/userService';
 
 async function verifyToken(req, res, next) {
     const authHeader = req.headers.authorization;
@@ -13,7 +13,7 @@ async function verifyToken(req, res, next) {
     try {
         const decoded = verify(token, process.env.JWT_SECRET);
 
-        const user = await User.findById(decoded.id);
+        const user = await userService.getUserProfile(decoded.id);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -29,21 +29,11 @@ async function verifyToken(req, res, next) {
 }
 
 function isAdmin(req, res, next) {
-    if (req.user?.type !== 'admin') {
+    if (req.user?.role !== 'admin') {
         return res.status(403).json({ message: 'Unauthorized' });
     }
     next();
 }
 
-function isSuperUser(req, res, next) {
-    if (!req.user?.isSuperUser) {
-        return res.status(403).json({
-            success: false,
-            message: 'Super user access required',
-        });
-    }
-    next();
-}
-
 export default verifyToken;
-export { isAdmin, isSuperUser };
+export { isAdmin };

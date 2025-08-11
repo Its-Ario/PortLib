@@ -6,14 +6,24 @@ const transactionSchema = Schema(
         user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
         type: { type: String, enum: ['borrow', 'purchase'], required: true },
         startDate: { type: Date, default: Date.now },
-        dueDate: { type: Date },
+        dueDate: {
+            type: Date,
+            required: function () {
+                return this.type === 'borrow';
+            },
+        },
         returnDate: { type: Date },
         status: {
             type: String,
             enum: ['active', 'completed', 'overdue'],
             default: 'active',
         },
-        price: { type: Number },
+        price: {
+            type: Number,
+            required: function () {
+                return this.type === 'purchase';
+            },
+        },
     },
     { timestamps: true }
 );

@@ -77,7 +77,7 @@ class WebSocketServer {
 
             const userId = req.user.id;
             const username = req.user.username;
-            const isSuperUser = req.user.isSuperUser || false;
+            const isAdmin = req.user.role === 'ADMIN' || false;
 
             console.log(`User ${userId} (${username}) connected`);
 
@@ -94,7 +94,7 @@ class WebSocketServer {
             this.clients.set(userId, ws);
             ws.userId = userId;
             ws.username = username;
-            ws.isSuperUser = isSuperUser;
+            ws.isAdmin = isAdmin;
             ws.isAlive = true;
 
             ws.on('pong', () => {
@@ -110,7 +110,7 @@ class WebSocketServer {
                     if (userData.userId === userId) {
                         const selfData = { ...userData, isSelf: true };
                         activeUsers.push(selfData);
-                    } else if (userData.showLocationToEveryone || isSuperUser) {
+                    } else if (userData.showLocationToEveryone || isAdmin) {
                         activeUsers.push(userData);
                     }
                 });
@@ -271,7 +271,7 @@ class WebSocketServer {
                         timestamp: Date.now(),
                     },
                     (client) => {
-                        return client.userId !== userId && !client.isSuperUser;
+                        return client.userId !== userId && !client.isAdmin;
                     }
                 );
             } else if (
@@ -283,7 +283,7 @@ class WebSocketServer {
                 const dataToSend = { ...userData };
                 delete dataToSend.isSelf;
                 this.broadcastToSpecificUsers(dataToSend, (client) => {
-                    return client.userId !== userId && !client.isSuperUser;
+                    return client.userId !== userId && !client.isAdmin;
                 });
             }
         }
@@ -311,7 +311,7 @@ class WebSocketServer {
             }
 
             this.broadcastToSpecificUsers(actionData, (client) => {
-                return client.userId !== userId && client.isSuperUser;
+                return client.userId !== userId && client.isAdmin;
             });
         }
     }
@@ -366,7 +366,7 @@ class WebSocketServer {
                     }
                     return false;
                 }
-                return client.isSuperUser;
+                return client.isAdmin;
             });
         }
     }

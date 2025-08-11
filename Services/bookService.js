@@ -38,6 +38,18 @@ class BookService {
         return Book.findById(bookId).lean();
     }
 
+    async updateBookCopies(bookId, incrementBy) {
+        if (typeof incrementBy !== 'number') {
+            throw new Error('incrementBy must be a number');
+        }
+
+        return Book.findByIdAndUpdate(
+            bookId,
+            { $inc: { copiesAvailable: incrementBy } },
+            { new: true }
+        );
+    }
+
     async updateBook(bookId, updateData) {
         return Book.findByIdAndUpdate(bookId, updateData, { new: true });
     }

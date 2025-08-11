@@ -1,10 +1,9 @@
 import { Router } from 'express';
-import User from '../Models/User.js';
-
+import userService from '../Services/userService';
 const router = Router();
 
 router.get('/users', async (req, res) => {
-    const users = await User.find();
+    const users = await userService.getAllUsers();
     res.json(users);
 });
 

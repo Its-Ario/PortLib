@@ -3,10 +3,9 @@ import { Schema, model } from 'mongoose';
 const userSchema = new Schema({
     name: { type: String },
     username: { type: String, required: true },
-    password: { type: String, required: true },
+    passwordHash: { type: String, required: true },
     email: { type: String, required: true },
-    isSuperUser: { type: Boolean, required: true, default: false },
-    type: { type: String, required: true, enum: ['admin', 'user'], default: 'user' },
+    role: { type: String, required: true, enum: ['ADMIN', 'MEMBER'], default: 'MEMBER' },
     tokenVersion: { type: Number, default: 1 },
     balance: { type: Number, default: 0 },
 });
