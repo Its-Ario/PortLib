@@ -19,6 +19,7 @@ import adminRoutes from './Routes/adminRoutes';
 import authRoutes from './Routes/authRoutes';
 import bookRoutes from './Routes/bookRoutes';
 import transactionRoutes from './Routes/transactionRoutes';
+import logger from './logger';
 
 app.use('/', mainRoutes);
 app.use('/', authRoutes);
@@ -48,19 +49,19 @@ app.get('/health', (req, res) => {
 });
 
 connect(process.env.MONGO_URI)
-    .then(() => console.log('✅ MongoDB connected'))
-    .catch((err) => console.error('❌ MongoDB connection error:', err));
+    .then(() => logger.log('✅ MongoDB connected'))
+    .catch((err) => logger.error('❌ MongoDB connection error:', err));
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`🚀 Server is running on http://localhost:${PORT}`);
-    console.log(`🔌 WebSocket server is active on ws://localhost:${PORT}`);
+    logger.log(`🚀 Server is running on http://localhost:${PORT}`);
+    logger.log(`🔌 WebSocket server is active on ws://localhost:${PORT}`);
 });
 
 process.on('uncaughtException', (err) => {
-    console.error('Uncaught exception:', err);
+    logger.error('Uncaught exception:', err);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });

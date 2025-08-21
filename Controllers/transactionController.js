@@ -1,4 +1,5 @@
 import libraryService from '../Services/libraryService.js';
+import transactionService from '../Services/transactionService.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const borrowBook = asyncHandler(async (req, res) => {
@@ -30,7 +31,7 @@ export const purchaseBook = asyncHandler(async (req, res) => {
 export const getUserTransactions = asyncHandler(async (req, res) => {
     const userId = req.user.id;
 
-    const transactions = await libraryService.getUserTransactions(userId);
+    const transactions = await transactionService.getUserTransactions(userId);
 
     res.status(200).json({ success: true, data: transactions });
 });
@@ -38,13 +39,13 @@ export const getUserTransactions = asyncHandler(async (req, res) => {
 export const getBookTransactions = asyncHandler(async (req, res) => {
     const { bookId } = req.params;
 
-    const transactions = await libraryService.getBookTransactions(bookId);
+    const transactions = await transactionService.getBookTransactions(bookId);
 
     res.status(200).json({ success: true, data: transactions });
 });
 
 export const getOverdueTransactions = asyncHandler(async (req, res) => {
-    const transactions = await libraryService.getOverdueTransactions();
+    const transactions = await transactionService.getOverdueTransactions();
 
     res.status(200).json({ success: true, data: transactions });
 });
@@ -59,7 +60,7 @@ export const addFunds = asyncHandler(async (req, res) => {
 });
 
 export const getAllTransactions = asyncHandler(async (req, res) => {
-    const transactions = await libraryService.getAllTransactions();
+    const transactions = await transactionService.getAllTransactions();
 
     res.status(200).json({ success: true, data: transactions });
 });

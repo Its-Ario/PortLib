@@ -1,5 +1,4 @@
 import { jest } from '@jest/globals';
-import mockingoose from 'mockingoose';
 import { Types } from 'mongoose';
 import userService from '../Services/userService.js';
 import User from '../Models/User.js';
@@ -9,52 +8,36 @@ jest.mock('bcrypt', () => ({
     hash: jest.fn(),
 }));
 
-const userId = new Types.ObjectId();
-const mockUser = {
-    _id: userId,
-    name: 'Test User',
-    username: 'testuser',
-    email: 'test@example.com',
-    balance: 100,
-    role: 'MEMBER',
-};
-
-describe('userService', () => {
-    beforeEach(() => {
-        mockingoose.resetAll();
-        jest.clearAllMocks();
+async function createUser() {
+    const user = await User.create({
+        username: 'u',
+        balance: 20,
+        passwordHash: '1',
+        email: 'a@b.com',
+        type: 'user',
     });
 
+    return user;
+}
+
+describe('userService', () => {
     describe('registerUser', () => {
         const userData = {
-            name: 'New User',
-            username: 'newuser',
-            email: 'new@example.com',
-            password: 'password123',
+            name: 'n',
+            username: 'u',
+            password: 'p',
+            email: 'a@b.com',
         };
-
         it('should create and save a new user successfully', async () => {
-            mockingoose(User).toReturn(null, 'findOne');
-
-            const fakeNewUser = {
-                ...userData,
-                _id: new Types.ObjectId(),
-                toObject: () => ({ ...userData, _id: new Types.ObjectId() }),
-            };
-
-            const saveMock = jest.fn().mockResolvedValue(fakeNewUser);
-            jest.spyOn(User.prototype, 'save').mockImplementation(saveMock);
-
             const result = await userService.registerUser(userData);
 
-            expect(saveMock).toHaveBeenCalled();
             expect(result).not.toHaveProperty('password');
             expect(result).not.toHaveProperty('passwordHash');
             expect(result.username).toBe(userData.username);
         });
 
         it('should throw an error if the user already exists', async () => {
-            mockingoose(User).toReturn(mockUser, 'findOne');
+            await createUser();
 
             await expect(userService.registerUser(userData)).rejects.toThrow(
                 'User with this email or username already exists.'
@@ -64,27 +47,27 @@ describe('userService', () => {
 
     describe('getUserProfile', () => {
         it('should return a user profile by ID', async () => {
-            mockingoose(User).toReturn(mockUser, 'findOne');
+            const user = await createUser();
+            const result = await userService.getUserProfile(user.id.toString());
 
-            const result = await userService.getUserProfile(userId.toString());
-
-            expect(result._id).toEqual(mockUser._id);
-            expect(result.name).toBe(mockUser.name);
+            expect(result._id).toEqual(user._id);
+            expect(result.name).toBe(user.name);
         });
     });
 
     describe('updateUserFunds', () => {
         it('should correctly add funds to a user account', async () => {
-            const updatedUser = { ...mockUser, balance: 150 };
-            mockingoose(User).toReturn(updatedUser, 'findOneAndUpdate');
+            const user = await createUser();
+            user.balance = 100;
+            await user.save();
 
-            const result = await userService.updateUserFunds(userId.toString(), 50);
+            const result = await userService.updateUserFunds(user.id.toString(), 50);
 
             expect(result.balance).toBe(150);
         });
 
         it('should throw an error if the user is not found', async () => {
-            mockingoose(User).toReturn(null, 'findOneAndUpdate');
+            const userId = new Types.ObjectId();
 
             await expect(userService.updateUserFunds(userId.toString(), 50)).rejects.toThrow(
                 'User not found'
@@ -93,34 +76,34 @@ describe('userService', () => {
     });
 
     describe('updateRole', () => {
-        it('should update the user role successfully', async () => {
-            const updatedUser = { ...mockUser, role: 'ADMIN' };
-            mockingoose(User).toReturn(updatedUser, 'findOneAndUpdate');
+        let user;
 
-            const result = await userService.updateRole(userId.toString(), 'ADMIN');
+        beforeEach(async () => {
+            user = await createUser();
+        });
+        it('should update the user role successfully', async () => {
+            const result = await userService.updateRole(user.id.toString(), 'ADMIN');
 
             expect(result.role).toBe('ADMIN');
         });
 
         it('should throw an error for an invalid role', async () => {
-            await expect(userService.updateRole(userId.toString(), 'INVALID_ROLE')).rejects.toThrow(
-                'Invalid role. Must be one of: ADMIN, MEMBER'
-            );
+            await expect(
+                userService.updateRole(user.id.toString(), 'INVALID_ROLE')
+            ).rejects.toThrow('Invalid role. Must be one of: ADMIN, MEMBER');
         });
     });
 
     describe('getAllUsers', () => {
         it('should return a list of users', async () => {
-            const userList = [
-                mockUser,
-                { ...mockUser, _id: new Types.ObjectId(), name: 'User Two' },
-            ];
-            mockingoose(User).toReturn(userList, 'find');
-
+            const user = await createUser();
+            await createUser();
             const result = await userService.getAllUsers();
 
+            expect(result).not.toHaveProperty('passwordHash');
+            expect(result).not.toHaveProperty('tokenVersion');
             expect(result.length).toBe(2);
-            expect(result[0].name).toBe(mockUser.name);
+            expect(result[0].username).toBe(user.username);
         });
     });
 });

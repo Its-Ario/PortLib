@@ -4,6 +4,7 @@ import pkg from 'jsonwebtoken';
 const { sign } = pkg;
 import auth from '../Middleware/authMiddleware.js';
 import userService from '../Services/userService.js';
+import logger from '../logger.js';
 
 const router = Router();
 
@@ -42,7 +43,7 @@ router.post('/login', async (req, res) => {
 
         res.json({ token, user: userData });
     } catch (error) {
-        console.error('Login error:', error);
+        logger.error('Login error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });

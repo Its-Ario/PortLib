@@ -38,6 +38,7 @@
         "husky": "^9.1.7",
         "jest": "^30.0.5",
         "mockingoose": "^2.16.2",
+        "mongodb-memory-server": "^10.2.0",
         "nodemon": "^3.1.10",
         "prettier": "^3.6.2"
     }

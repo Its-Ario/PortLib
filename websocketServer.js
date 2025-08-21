@@ -2,6 +2,7 @@ import { WebSocketServer as wsServer } from 'ws';
 import pkg from 'jsonwebtoken';
 const { verify } = pkg;
 import User from './Models/User.js';
+import logger from './logger.js';
 
 class WebSocketServer {
     constructor(server, options = {}) {
@@ -37,7 +38,7 @@ class WebSocketServer {
                 const decoded = verify(token, this.jwtSecret);
 
                 if (!decoded.id) {
-                    console.error('Token missing id field');
+                    logger.error('Token missing id field');
                     return done(false, 401, 'Invalid token format');
                 }
 
@@ -59,11 +60,11 @@ class WebSocketServer {
 
                 return done(true);
             } catch (err) {
-                console.error('Token verification failed:', err.message);
+                logger.error('Token verification failed:', err.message);
                 return done(false, 401, 'Invalid token');
             }
         } catch (error) {
-            console.error('Error in verifyClient:', error);
+            logger.error('Error in verifyClient:', error);
             return done(false, 500, 'Server error');
         }
     }
@@ -79,14 +80,14 @@ class WebSocketServer {
             const username = req.user.username;
             const isAdmin = req.user.role === 'ADMIN' || false;
 
-            console.log(`User ${userId} (${username}) connected`);
+            logger.log(`User ${userId} (${username}) connected`);
 
             if (this.clients.has(userId)) {
                 const existingWs = this.clients.get(userId);
                 try {
                     existingWs.terminate();
                 } catch (e) {
-                    console.error(`Error terminating connection for user ${userId}:`, e);
+                    logger.error(`Error terminating connection for user ${userId}:`, e);
                 }
                 this.cleanupUserResources(userId);
             }
@@ -119,7 +120,7 @@ class WebSocketServer {
                     try {
                         ws.send(JSON.stringify(activeUsers));
                     } catch (e) {
-                        console.error('Error sending initial users data:', e);
+                        logger.error('Error sending initial users data:', e);
                     }
                 }
             }
@@ -130,7 +131,7 @@ class WebSocketServer {
                     const data = JSON.parse(messageStr);
 
                     if (data.userId && data.userId !== userId) {
-                        console.warn(`User ${userId} tried to send data for ${data.userId}`);
+                        logger.warn(`User ${userId} tried to send data for ${data.userId}`);
                         return;
                     }
 
@@ -156,15 +157,13 @@ class WebSocketServer {
                     }
 
                     if (data.type === 'action') {
-                        console.log(
-                            `Processing immediate action from user ${userId} (${username})`
-                        );
+                        logger.log(`Processing immediate action from user ${userId} (${username})`);
                         this.handleImmediateAction(userId, data);
                         return;
                     }
 
                     if (data.lat !== undefined && data.lng !== undefined) {
-                        console.log(`Processing location update from user ${userId} (${username})`);
+                        logger.log(`Processing location update from user ${userId} (${username})`);
 
                         if (
                             data.showLocationToEveryone === undefined &&
@@ -188,14 +187,14 @@ class WebSocketServer {
                         return;
                     }
 
-                    console.log(`Processing generic update from user ${userId} (${username})`);
+                    logger.log(`Processing generic update from user ${userId} (${username})`);
 
                     ws.userData = data;
                     this.userLocations.set(userId, data);
 
                     this.broadcastLocation(userId, data);
                 } catch (e) {
-                    console.error('Error processing message:', e);
+                    logger.error('Error processing message:', e);
                 }
             });
 
@@ -204,7 +203,7 @@ class WebSocketServer {
             });
 
             ws.on('error', (error) => {
-                console.error(`WebSocket error for user ${userId}:`, error);
+                logger.error(`WebSocket error for user ${userId}:`, error);
                 this.handleDisconnect(userId, username);
             });
         });
@@ -225,7 +224,7 @@ class WebSocketServer {
     }
 
     handleDisconnect(userId, username) {
-        console.log(`User ${userId} (${username}) disconnected`);
+        logger.log(`User ${userId} (${username}) disconnected`);
 
         this.cleanupUserResources(userId);
 
@@ -261,7 +260,7 @@ class WebSocketServer {
             userData.timestamp = Date.now();
             this.userLocations.set(userId, userData);
 
-            console.log(`User ${userId} visibility changed to ${showLocationToEveryone}`);
+            logger.log(`User ${userId} visibility changed to ${showLocationToEveryone}`);
 
             if (previousVisibility === true && showLocationToEveryone === false) {
                 this.broadcastToSpecificUsers(
@@ -306,7 +305,7 @@ class WebSocketServer {
                     const selfData = { ...actionData, isSelf: true };
                     selfClient.send(JSON.stringify(selfData));
                 } catch (err) {
-                    console.error(`Error sending action to self client ${userId}:`, err);
+                    logger.error(`Error sending action to self client ${userId}:`, err);
                 }
             }
 
@@ -326,7 +325,7 @@ class WebSocketServer {
 
         const timeout = setTimeout(() => {
             if (this.clients.has(userId) && this.userLocations.has(userId)) {
-                console.log(`Executing delayed location update for user ${userId}`);
+                logger.log(`Executing delayed location update for user ${userId}`);
 
                 const currentData = this.userLocations.get(userId);
 
@@ -345,7 +344,7 @@ class WebSocketServer {
             timeout: timeout,
         });
 
-        console.log(
+        logger.log(
             `Scheduled delayed location update for user ${userId} in ${this.locationUpdateInterval}ms`
         );
     }
@@ -362,7 +361,7 @@ class WebSocketServer {
                     try {
                         client.send(JSON.stringify(selfData));
                     } catch (err) {
-                        console.error(`Error sending to self client ${userId}:`, err);
+                        logger.error(`Error sending to self client ${userId}:`, err);
                     }
                     return false;
                 }
@@ -380,7 +379,7 @@ class WebSocketServer {
                 try {
                     client.send(message);
                 } catch (err) {
-                    console.error(`Error sending to client ${clientId}:`, err);
+                    logger.error(`Error sending to client ${clientId}:`, err);
                     deadClients.push(clientId);
                 }
             } else if (
@@ -411,7 +410,7 @@ class WebSocketServer {
                         client.send(message);
                     }
                 } catch (err) {
-                    console.error(`Error sending to client ${clientId}:`, err);
+                    logger.error(`Error sending to client ${clientId}:`, err);
                     deadClients.push(clientId);
                 }
             } else if (
@@ -447,7 +446,7 @@ class WebSocketServer {
                 try {
                     ws.ping();
                 } catch (e) {
-                    console.error('Error sending ping:', e);
+                    logger.error('Error sending ping:', e);
                     if (ws.userId) {
                         deadClients.push(ws.userId);
                     }
@@ -520,7 +519,7 @@ class WebSocketServer {
             try {
                 client.close(1000, 'Server shutting down');
             } catch (e) {
-                console.error(`Error closing connection for user ${userId}:`, e);
+                logger.error(`Error closing connection for user ${userId}:`, e);
             }
         });
 
