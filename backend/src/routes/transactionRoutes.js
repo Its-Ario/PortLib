@@ -9,8 +9,8 @@ import {
     addFunds,
     getOverdueTransactions,
     getAllTransactions,
-} from '../Controllers/transactionController.js';
-import auth, { isAdmin } from '../Middleware/authMiddleware.js';
+} from '../controllers/transactionController.js';
+import auth, { isAdmin } from '../middleware/authMiddleware.js';
 
 router.use(auth);
 

@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals';
-import BookService from '../Services/bookService.js';
-import Book from '../Models/Book.js';
+import BookService from '../src/services/bookService.js';
+import Book from '../src/models/Book.js';
 
-jest.mock('../Models/Book.js');
+jest.mock('../src/models/Book.js');
 
 const MockedBook = Book;
 

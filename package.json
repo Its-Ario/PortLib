@@ -1,45 +1,26 @@
 {
-    "name": "library-node",
-    "version": "1.0.0",
-    "description": "",
-    "main": "server.js",
-    "type": "module",
-    "scripts": {
-        "test": "npx cross-env NODE_OPTIONS=\"--experimental-vm-modules\" jest",
-        "start": "node server.js",
-        "dev": "nodemon server.js",
-        "lint": "eslint .",
-        "lint:fix": "eslint . --fix",
-        "format": "prettier --write .",
-        "prepare": "husky install"
-    },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "dependencies": {
-        "bcrypt": "^5.1.1",
-        "cors": "^2.8.5",
-        "dotenv": "^16.4.7",
-        "express": "^5.1.0",
-        "helmet": "^8.1.0",
-        "jsonwebtoken": "^9.0.2",
-        "mongoose": "^8.13.2",
-        "morgan": "^1.10.1",
-        "uuid": "^11.1.0",
-        "winston": "^3.17.0",
-        "ws": "^8.18.2"
-    },
-    "devDependencies": {
-        "@eslint/js": "^9.33.0",
-        "eslint": "^9.33.0",
-        "eslint-config-prettier": "^10.1.8",
-        "eslint-plugin-prettier": "^5.5.4",
-        "globals": "^16.3.0",
-        "husky": "^9.1.7",
-        "jest": "^30.0.5",
-        "mockingoose": "^2.16.2",
-        "mongodb-memory-server": "^10.2.0",
-        "nodemon": "^3.1.10",
-        "prettier": "^3.6.2"
-    }
+  "name": "portlib",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "install-all": "npm install --workspaces",
+    "dev:backend": "npm --workspace backend run dev",
+    "dev:frontend": "npm --workspace frontend run dev",
+    "build:backend": "npm --workspace backend run build",
+    "build:frontend": "npm --workspace frontend run build",
+    "test:backend": "npm --workspace backend test",
+    "test:frontend": "npm --workspace frontend test",
+    "lint": "eslint 'backend/**/*.js' 'frontend/**/*.js' --fix",
+    "format": "prettier --write 'backend/**/*.{js,ts,json,md}' 'frontend/**/*.{js,ts,css,html,json,md}'"
+  },
+  "devDependencies": {
+    "eslint": "^9.33.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-node": "^11.1.0",
+    "prettier": "^3.6.2"
+  }
 }

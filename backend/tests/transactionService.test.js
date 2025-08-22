@@ -1,7 +1,7 @@
-import transactionService from '../Services/transactionService.js';
-import Transaction from '../Models/Transaction.js';
-import Book from '../Models/Book.js';
-import User from '../Models/User.js';
+import transactionService from '../src/services/transactionService.js';
+import Transaction from '../src/models/Transaction.js';
+import Book from '../src/models/Book.js';
+import User from '../src/models/User.js';
 
 async function createObjects() {
     const user = await User.create({

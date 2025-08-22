@@ -1,7 +1,7 @@
-import LibraryService from '../Services/libraryService.js';
-import Book from '../Models/Book.js';
-import User from '../Models/User.js';
-import Transaction from '../Models/Transaction.js';
+import LibraryService from '../src/services/libraryService.js';
+import Book from '../src/models/Book.js';
+import User from '../src/models/User.js';
+import Transaction from '../src/models/Transaction.js';
 import { expect } from '@jest/globals';
 
 async function createBookAndUser() {

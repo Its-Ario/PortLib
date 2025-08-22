@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import userService from '../Services/userService.js';
+import userService from '../services/userService.js';
 const router = Router();
 
 router.get('/users', async (req, res) => {

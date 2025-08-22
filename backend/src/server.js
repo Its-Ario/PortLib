@@ -3,10 +3,12 @@ import { config } from 'dotenv';
 import pkg from 'mongoose';
 const { connect, connection } = pkg;
 import app from './app.js';
-import WebSocketServer from './websocketServer.js';
+import SignalingServer from './signalingServer.js';
 import logger from './logger.js';
 
-config();
+config({
+    path: '../.env'
+});
 
 const PORT = process.env.PORT || 3000;
 
@@ -17,7 +19,7 @@ async function startServer() {
 
         const server = createServer(app);
 
-        const wsServer = new WebSocketServer(server, {
+        const wsServer = new SignalingServer(server, {
             jwtSecret: process.env.JWT_SECRET || 'jwt_secret',
             pingInterval: 30000,
             pingTimeout: 60000,
@@ -38,7 +40,7 @@ async function startServer() {
 
         server.listen(PORT, () => {
             logger.info(`🚀 Server running at http://localhost:${PORT}`);
-            logger.info(`🔌 WebSocket server active on ws://localhost:${PORT}`);
+            logger.info(`🔌 Signaling server active on ws://localhost:${PORT}`);
         });
     } catch (err) {
         logger.error('❌ Failed to start server:', err);

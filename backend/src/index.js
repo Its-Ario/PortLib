@@ -14,11 +14,11 @@ app.use(cors());
 
 app.use(express.static('public'));
 
-import mainRoutes from './Routes/mainRoutes';
-import adminRoutes from './Routes/adminRoutes';
-import authRoutes from './Routes/authRoutes';
-import bookRoutes from './Routes/bookRoutes';
-import transactionRoutes from './Routes/transactionRoutes';
+import mainRoutes from '.routes/mainRoutes';
+import adminRoutes from '.routes/adminRoutes';
+import authRoutes from '.routes/authRoutes';
+import bookRoutes from '.routes/bookRoutes';
+import transactionRoutes from '.routes/transactionRoutes';
 import logger from './logger';
 
 app.use('/', mainRoutes);

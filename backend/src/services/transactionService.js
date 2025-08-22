@@ -1,5 +1,5 @@
 import logger from '../logger.js';
-import Transaction from '../Models/Transaction.js';
+import Transaction from '../models/Transaction.js';
 import bookService from './bookService.js';
 import userService from './userService.js';
 

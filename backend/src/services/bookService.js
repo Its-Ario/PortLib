@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import Book from '../Models/Book.js';
+import Book from '../models/Book.js';
 import logger from '../logger.js';
 
 class BookService {

@@ -1,4 +1,4 @@
-import bookService from '../Services/bookService.js';
+import bookService from '../services/bookService.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const listBooks = asyncHandler(async (req, res) => {

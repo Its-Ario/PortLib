@@ -1,5 +1,5 @@
-import libraryService from '../Services/libraryService.js';
-import transactionService from '../Services/transactionService.js';
+import libraryService from '../services/libraryService.js';
+import transactionService from '../services/transactionService.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const borrowBook = asyncHandler(async (req, res) => {

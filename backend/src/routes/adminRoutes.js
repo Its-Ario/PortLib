@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { hash } from 'bcrypt';
-import userService from '../Services/userService.js';
-import auth, { isAdmin } from '../Middleware/authMiddleware.js';
+import userService from '../services/userService.js';
+import auth, { isAdmin } from '../middleware/authMiddleware.js';
 
 const router = Router();
 router.use(auth, isAdmin);

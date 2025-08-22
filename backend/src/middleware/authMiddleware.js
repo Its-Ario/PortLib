@@ -1,6 +1,6 @@
 import pkg from 'jsonwebtoken';
 const { verify } = pkg;
-import userService from '../Services/userService.js';
+import userService from '../services/userService.js';
 
 async function verifyToken(req, res, next) {
     const authHeader = req.headers.authorization;

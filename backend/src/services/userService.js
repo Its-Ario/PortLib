@@ -1,4 +1,4 @@
-import User from '../Models/User.js';
+import User from '../models/User.js';
 import bcrypt from 'bcrypt';
 import logger from '../logger.js';
 
@@ -51,7 +51,7 @@ class UserService {
             if (!field) throw new Error('Field name is required');
             logger.info(`Fetching user by ${field}: ${value}`);
             const query = { [field]: value };
-            return User.findOne(query).select('-passwordHash').lean();
+            return User.findOne(query).lean();
         } catch (error) {
             logger.error(`Failed to get user by ${field}: ${error.message}`, error);
             throw error;

@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { compare, hash } from 'bcrypt';
 import pkg from 'jsonwebtoken';
 const { sign } = pkg;
-import auth from '../Middleware/authMiddleware.js';
-import userService from '../Services/userService.js';
+import auth from '../middleware/authMiddleware.js';
+import userService from '../services/userService.js';
 import logger from '../logger.js';
 
 const router = Router();

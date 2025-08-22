@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import { Types } from 'mongoose';
-import userService from '../Services/userService.js';
-import User from '../Models/User.js';
+import userService from '../src//services/userService.js';
+import User from '../src/models/User.js';
 
 jest.mock('bcrypt', () => ({
     genSalt: jest.fn(),
