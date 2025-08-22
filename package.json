@@ -9,7 +9,7 @@
     "install-all": "pnpm install --w",
     "dev:backend": "pnpm --filter backend run dev",
     "dev:frontend": "pnpm --filter frontend run dev",
-    "build:backend": "pnpm --filter backend run build",
+    "start:backend": "pnpm --filter backend start",
     "build:frontend": "pnpm --filter frontend run build",
     "test:backend": "pnpm --filter backend test",
     "test:frontend": "pnpm --filter frontend test",

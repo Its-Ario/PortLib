@@ -13,4 +13,4 @@ COPY backend ./backend/
 
 EXPOSE 3000
 
-CMD ["pnpm", "start"]
+CMD ["pnpm", "run", "start:backend"]

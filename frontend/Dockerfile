@@ -11,7 +11,7 @@ RUN npm install -g pnpm \
 
 COPY frontend ./frontend/
 
-RUN pnpm build --filter frontend
+RUN pnpm run build:frontend
 
 FROM nginx:alpine
 
