@@ -2,13 +2,14 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY backend/package.json pnpm-lock.yaml ./ 
-COPY backend ./
+COPY pnpm-lock.yaml package.json ./
+
+COPY backend/package.json ./backend/
 
 RUN npm install -g pnpm \
     && pnpm install --filter backend --frozen-lockfile
 
-COPY . .
+COPY backend ./backend/
 
 EXPOSE 3000
 
