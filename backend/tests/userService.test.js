@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import { Types } from 'mongoose';
-import userService from '../src//services/userService.js';
+import userService from '../src/services/userService.js';
 import User from '../src/models/User.js';
 
 jest.mock('bcrypt', () => ({
