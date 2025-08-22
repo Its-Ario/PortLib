@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         provider = new WebrtcProvider('map-room', doc, {
-            signaling: ['ws://localhost:3000'],
+            signaling: ['wss://lib.itsario.ir/api/'],
             awareness: new awarenessProtocol.Awareness(doc),
         });
 
