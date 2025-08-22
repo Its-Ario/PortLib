@@ -75,3 +75,55 @@ jobs:
 
             - name: Run frontend tests
               run: pnpm exec vitest run --environment=jsdom
+
+            - name: Cache Docker layers
+              uses: actions/cache@v3
+              with:
+                path: /tmp/.buildx-cache
+                key: ${{ runner.os }}-docker-${{ github.sha }}
+                restore-keys: |
+                  ${{ runner.os }}-docker-
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v2
+
+            - name: Build Docker images with cache
+              run: |
+                docker buildx build \
+                  --cache-from=type=local,src=/tmp/.buildx-cache \
+                  --cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max \
+                  -f backend/Dockerfile -t portlib-backend ./backend
+                
+                docker buildx build \
+                  --cache-from=type=local,src=/tmp/.buildx-cache \
+                  --cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max \
+                  -f frontend/Dockerfile -t portlib-frontend ./frontend
+
+                mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+            - name: Add VPS to known hosts
+              run: |
+                mkdir -p ~/.ssh
+                ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+            - name: Deploy to VPS
+              uses: appleboy/ssh-action@v0.1.9
+              with:
+                host: ${{ secrets.VPS_HOST }}
+                username: ${{ secrets.VPS_USER }}
+                key: ${{ secrets.VPS_SSH_KEY }}
+                script: |
+                  cd ~/portlib
+                  git fetch origin main
+                  git reset --hard origin/main
+
+                  echo "Pulling latest images if exist"
+                  docker compose pull
+
+                  echo "Building only changed images"
+                  docker compose build --pull --parallel
+
+                  echo "Deploy containers"
+                  docker compose up -d --remove-orphans
+
+                  echo "Prune unused Docker resources"
+                  docker system prune -f
