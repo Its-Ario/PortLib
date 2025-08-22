@@ -5,14 +5,12 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "test": "vitest --config=vitest.browser.config.js",
+        "test": "vitest run",
         "build": "vite build",
         "preview": "vite preview"
     },
     "devDependencies": {
-        "@vitest/browser": "^3.2.4",
         "jsdom": "^26.1.0",
-        "playwright": "^1.55.0",
         "vite": "^7.1.2",
         "vitest": "^3.2.4"
     },
