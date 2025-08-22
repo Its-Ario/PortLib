@@ -13,7 +13,7 @@
     "build:frontend": "npm --workspace frontend run build",
     "test:backend": "npm --workspace backend test",
     "test:frontend": "npm --workspace frontend test",
-    "lint": "eslint 'backend/**/*.js' 'frontend/**/*.js' --fix",
+    "lint": "eslint backend/**/*.js frontend/**/*.js --fix",
     "format": "prettier --write 'backend/**/*.{js,ts,json,md}' 'frontend/**/*.{js,ts,css,html,json,md}'"
   },
   "devDependencies": {

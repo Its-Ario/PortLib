@@ -1,667 +1,471 @@
-/* global L */
+import * as Y from 'yjs';
+import * as L from 'leaflet';
+import { WebrtcProvider } from 'y-webrtc';
+import * as awarenessProtocol from 'y-protocols/awareness.js';
 
-document.addEventListener('DOMContentLoaded', function () {
-    const { protocol, host, pathname } = window.location;
+export function saveAuthToken(token) {
+    if (token) {
+        localStorage.setItem('authToken', token);
+    }
+}
 
-    const basePath = pathname.replace(/\/$/, '');
+export function getAuthToken() {
+    return localStorage.getItem('authToken');
+}
 
-    const API_BASE_URL = `/api`;
+export function removeAuthToken() {
+    localStorage.removeItem('authToken');
+}
 
-    const WS_PROTOCOL = protocol === 'https:' ? 'wss:' : 'ws:';
-    const WS_BASE_URL = `${WS_PROTOCOL}//${host}${basePath}`;
+export function showLogin(loginContainer, appContainer, loginError, loginForm) {
+    if (loginContainer && appContainer) {
+        loginContainer.style.display = 'flex';
+        appContainer.style.display = 'none';
 
-    let map = L.map('map', {
-        dragging: true,
-        attributionControl: false,
-        zoomControl: true,
-    }).setView([35.7219, 51.3347], 13);
+        if (loginError) loginError.style.display = 'none';
+        if (loginForm) loginForm.reset();
+    }
+}
 
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map);
+export function showApp(loginContainer, appContainer) {
+    if (loginContainer && appContainer) {
+        loginContainer.style.display = 'none';
+        appContainer.style.display = 'flex';
+    }
+}
+
+export function showLoginError(message, loginError) {
+    if (loginError) {
+        loginError.textContent = message;
+        loginError.style.display = 'block';
+    }
+}
+
+export function showLoginLoading(isLoading, loginForm) {
+    const loginButton = loginForm ? loginForm.querySelector('button') : null;
+    if (loginButton) {
+        loginButton.disabled = isLoading;
+        loginButton.innerHTML = isLoading
+            ? '<i class="fas fa-spinner fa-spin"></i> Logging in...'
+            : 'Login';
+    }
+}
+
+export function updateUserWelcome(currentUsername, header) {
+    if (!header) return;
+    const oldWelcome = header.querySelector('.welcome-text');
+    if (oldWelcome) oldWelcome.remove();
+
+    const welcomeText = document.createElement('div');
+    welcomeText.className = 'welcome-text';
+    welcomeText.innerHTML = `Welcome, <strong>${currentUsername}</strong>`;
+    header.prepend(welcomeText);
+}
+
+// --- Marker helpers ---
+export function updateUserMarker(userData, map, userMarkers, currentUserId) {
+    const { userId, lat, lng, accuracy, username, visible } = userData;
+    if (!userId || lat === undefined || lng === undefined) return;
+
+    if (!visible && userId !== currentUserId) {
+        removeUserMarker(userId, map, userMarkers);
+        return;
+    }
+
+    const position = [lat, lng];
+    const isCurrentUser = userId === currentUserId;
+
+    if (userMarkers.has(userId)) {
+        const markerData = userMarkers.get(userId);
+        markerData.marker.setLatLng(position);
+        markerData.accuracyCircle.setLatLng(position).setRadius(accuracy || 50);
+    } else {
+        const markerColor = isCurrentUser ? '#3498db' : '#e74c3c';
+        const marker = L.marker(position, {
+            icon: L.divIcon({
+                className: 'user-location-marker',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12],
+                html: `<div style="background-color: ${markerColor}; width: 100%; height: 100%; border-radius: 50%; border: 3px solid white;"></div>`,
+            }),
+        }).addTo(map);
+
+        marker.bindPopup(`<strong>${username || userId}</strong>`);
+
+        const accuracyCircle = L.circle(position, {
+            radius: accuracy || 50,
+            color: markerColor,
+            fillOpacity: 0.15,
+        }).addTo(map);
+
+        userMarkers.set(userId, { marker, accuracyCircle });
+
+        if (isCurrentUser) {
+            map.setView(position, 15);
+        }
+    }
+}
+
+export function removeUserMarker(userId, map, userMarkers) {
+    if (userMarkers.has(userId)) {
+        const { marker, accuracyCircle } = userMarkers.get(userId);
+        map.removeLayer(marker);
+        map.removeLayer(accuracyCircle);
+        userMarkers.delete(userId);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const API_BASE_URL = '/api';
+    const map = L.map('map', { attributionControl: false, zoomControl: true }).setView(
+        [35.7219, 51.3347],
+        13
+    );
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
     const userMarkers = new Map();
     let currentUserId = null;
+    let currentUsername = null;
+    let authToken = null;
     let watchId = null;
-    let hasZoomedToLocation = false;
-    let lastKnownPosition = null;
-    let lastSentPosition = null;
-
-    let updateInterval = null;
-    const UPDATE_DELAY = 5000;
-    let pendingLocationUpdate = false;
-    let lastPositionData = null;
-
-    let socket = null;
-    let reconnectAttempts = 0;
-    const maxReconnectAttempts = 5;
-    const reconnectDelay = 3000;
-    let reconnectTimeout = null;
+    let provider = null;
 
     const loginContainer = document.getElementById('login-container');
     const appContainer = document.getElementById('app-container');
     const loginForm = document.getElementById('login-form');
     const loginError = document.getElementById('login-error');
     const logoutButton = document.getElementById('logout-button');
-    const startTrackingBtn = document.getElementById('start-tracking');
-    const stopTrackingBtn = document.getElementById('stop-tracking');
-    const connectionStatus = document.getElementById('connection-status');
+    const locationToggleBtn = document.getElementById('location-toggle');
     const coordsElement = document.getElementById('coordinates');
-    const usersList = document.getElementById('users-list');
-    const usersCount = document.getElementById('users-count');
-    const recenterMapBtn = document.getElementById('recenter-map');
     const showLocationCheckbox = document.getElementById('show-location-checkbox');
+    const recenterMapBtn = document.getElementById('recenter-map');
+    const usersCountElement = document.getElementById('users-count');
+    const usersListElement = document.getElementById('users-list');
+    const header = document.querySelector('.header');
 
-    function checkAuth() {
-        const token = localStorage.getItem('token');
+    // --- Yjs setup ---
+    const doc = new Y.Doc();
+    const yUsers = doc.getMap('users');
 
-        if (token) {
-            fetch(API_BASE_URL + '/verify-token', {
-                method: 'POST',
-                headers: {
-                    Authorization: 'Bearer ' + token,
-                },
-            })
-                .then((response) => {
-                    if (response.ok) {
-                        return response.json();
-                    } else {
-                        throw new Error('Invalid token');
-                    }
-                })
-                .then((data) => {
-                    currentUserId = data.user.id;
-                    showApp();
-                    connectWebSocket(token);
-                })
-                .catch((error) => {
-                    console.error('Authentication error:', error);
-                    localStorage.removeItem('token');
-                    showLogin();
-                });
+    function initializeProvider() {
+        if (provider) {
+            provider.destroy();
+        }
+
+        provider = new WebrtcProvider('map-room', doc, {
+            signaling: ['ws://localhost:3000'],
+            awareness: new awarenessProtocol.Awareness(doc),
+        });
+
+        provider.on('synced', () => {
+            console.log('Provider synced');
+        });
+
+        provider.on('connection-error', (error) => {
+            console.error('Connection error:', error);
+        });
+    }
+
+    let isTracking = false;
+
+    function updateLocationToggleButton() {
+        if (!locationToggleBtn) return;
+
+        if (isTracking) {
+            locationToggleBtn.innerHTML = '<i class="fas fa-stop-circle"></i> Stop Sharing';
+            locationToggleBtn.className = 'toggle-button stop-state';
         } else {
-            showLogin();
+            locationToggleBtn.innerHTML = '<i class="fas fa-location-arrow"></i> Start Sharing';
+            locationToggleBtn.className = 'toggle-button start-state';
         }
     }
 
-    function showLogin() {
-        loginContainer.style.display = 'flex';
-        appContainer.style.display = 'none';
-    }
-
-    function showApp() {
-        loginContainer.style.display = 'none';
-        appContainer.style.display = 'flex';
-    }
-
-    function updateConnectionStatus(message, connected = false) {
-        connectionStatus.textContent = message;
-        connectionStatus.className = connected ? 'status-connected' : 'status-disconnected';
-
-        const iconClass = connected ? 'fa-check-circle' : 'fa-exclamation-triangle';
-        connectionStatus.innerHTML = `<i class="fas ${iconClass}"></i> ${message}`;
-    }
-
-    function clearAllMarkers() {
-        userMarkers.forEach((markerData) => {
-            map.removeLayer(markerData.marker);
-            map.removeLayer(markerData.accuracyCircle);
-        });
-        userMarkers.clear();
-        updateUsersList();
-    }
-
-    function updateUserMarker(userData) {
-        try {
-            const userId = userData.userId;
-            const username = userData.username || 'User';
-            const lat = parseFloat(userData.lat);
-            const lng = parseFloat(userData.lng);
-            const accuracy = parseFloat(userData.accuracy) || 10;
-
-            if (!userId || isNaN(lat) || isNaN(lng)) {
-                console.error('Invalid marker data:', userData);
-                return;
-            }
-
-            const position = [lat, lng];
-            const isCurrentUser = userId === currentUserId;
-
-            if (userMarkers.has(userId)) {
-                const markerData = userMarkers.get(userId);
-
-                markerData.marker.setLatLng(position);
-                markerData.marker
-                    .getPopup()
-                    .setContent(createPopupContent(username, accuracy, isCurrentUser));
-
-                markerData.accuracyCircle.setLatLng(position);
-                markerData.accuracyCircle.setRadius(accuracy);
-                markerData.lastUpdated = Date.now();
-                markerData.username = username;
-
-                if (isCurrentUser) {
-                    lastKnownPosition = position;
-                }
+    yUsers.observe((event) => {
+        console.log('Users map changed:', event);
+        event.keysChanged.forEach((userId) => {
+            const userData = yUsers.get(userId);
+            console.log(`User ${userId} data:`, userData);
+            if (!userData) {
+                removeUserMarker(userId, map, userMarkers);
             } else {
-                const markerColor = isCurrentUser ? '#3498db' : '#e74c3c';
-                const fillColor = isCurrentUser ? '#3498db' : '#e74c3c';
-
-                try {
-                    const marker = L.marker(position, {
-                        icon: L.divIcon({
-                            className: 'user-location-marker',
-                            html: `<div class="user-location-pulse" style="border-color:${markerColor}"></div>
-                                    <div class="user-location-point" style="background-color:${markerColor}"></div>`,
-                            iconSize: [24, 24],
-                            iconAnchor: [12, 12],
-                        }),
-                    }).addTo(map);
-
-                    marker.bindPopup(createPopupContent(username, accuracy, isCurrentUser));
-
-                    const accuracyCircle = L.circle(position, {
-                        radius: accuracy,
-                        weight: 1,
-                        color: markerColor,
-                        fillColor: fillColor,
-                        fillOpacity: 0.15,
-                    }).addTo(map);
-
-                    userMarkers.set(userId, {
-                        marker: marker,
-                        accuracyCircle: accuracyCircle,
-                        lastUpdated: Date.now(),
-                        isCurrentUser: isCurrentUser,
-                        username: username,
-                    });
-
-                    if (isCurrentUser) {
-                        lastKnownPosition = position;
-
-                        if (!hasZoomedToLocation) {
-                            map.setView(position, 15);
-                            hasZoomedToLocation = true;
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error creating marker:', error);
-                }
+                updateUserMarker(userData, map, userMarkers, currentUserId);
             }
-
-            updateUsersList();
-        } catch (error) {
-            console.error('Error in updateUserMarker:', error);
-        }
-    }
-
-    function createPopupContent(username, accuracy, isCurrentUser) {
-        return `
-            <div class="user-popup">
-                <h4>${isCurrentUser ? `You (${username})` : username}</h4>
-                <p>Accuracy: ${accuracy.toFixed(2)}m</p>
-                <p>Updated: ${formatTime(new Date())}</p>
-            </div>
-        `;
-    }
-
-    function formatTime(date) {
-        return date.toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
         });
-    }
+        updateUsersList();
+    });
 
-    function removeUserMarker(userId) {
-        if (userMarkers.has(userId)) {
-            const markerData = userMarkers.get(userId);
-            map.removeLayer(markerData.marker);
-            map.removeLayer(markerData.accuracyCircle);
-            userMarkers.delete(userId);
-            updateUsersList();
+    function sendLocation(lat, lng, accuracy) {
+        if (!currentUserId) {
+            console.log('No current user ID, cannot send location');
+            return;
         }
+
+        const visible = showLocationCheckbox ? showLocationCheckbox.checked : true;
+        const userData = {
+            userId: currentUserId,
+            lat,
+            lng,
+            accuracy: accuracy || 50,
+            username: currentUsername || currentUserId,
+            visible: visible,
+            timestamp: Date.now(),
+        };
+
+        console.log('Sending location:', userData);
+        yUsers.set(currentUserId, userData);
     }
 
     function updateUsersList() {
-        usersList.innerHTML = '';
-        usersCount.textContent = userMarkers.size + ' users online';
+        if (!usersCountElement || !usersListElement) return;
 
-        userMarkers.forEach((markerData, userId) => {
-            const userItem = document.createElement('div');
-            userItem.className = 'user-item';
+        const users = Array.from(yUsers.entries());
+        usersCountElement.textContent = `${users.length} user${users.length !== 1 ? 's' : ''} online`;
 
-            if (userId === currentUserId) {
-                userItem.className += ' current';
-            }
-
-            const timeAgo = Math.floor((Date.now() - markerData.lastUpdated) / 1000);
-            const markerPos = markerData.marker.getLatLng();
-            const isOnline = timeAgo < 60;
-
-            const username = markerData.username || 'User';
-
-            userItem.innerHTML = `
-                <strong>${userId === currentUserId ? `You (${username})` : username}</strong>
-                <div class="user-details">
-                    <div><i class="fas fa-map-marker-alt"></i> Lat: ${markerPos.lat.toFixed(6)}, Lng: ${markerPos.lng.toFixed(6)}</div>
-                    <div><i class="fas fa-clock"></i> Updated: ${formatTimeAgo(timeAgo)}</div>
-                    <div class="user-status ${isOnline ? 'online' : 'offline'}">
-                        <i class="fas fa-circle"></i> ${isOnline ? 'Online' : 'Inactive'}
-                    </div>
-                </div>
-            `;
-
-            userItem.addEventListener('click', () => {
-                map.setView([markerPos.lat, markerPos.lng], 15);
-                markerData.marker.openPopup();
-            });
-
-            usersList.appendChild(userItem);
-        });
+        usersListElement.innerHTML = users
+            .map(([userId, userData]) => {
+                const isCurrentUser = userId === currentUserId;
+                const lastSeen = userData.timestamp
+                    ? new Date(userData.timestamp).toLocaleTimeString()
+                    : 'Unknown';
+                return `<div class="user-item ${isCurrentUser ? 'current-user' : ''}">
+                <i class="fas fa-user"></i> ${userData.username || userId} 
+                ${isCurrentUser ? '(You)' : ''} 
+                <span class="last-seen">${lastSeen}</span>
+            </div>`;
+            })
+            .join('');
     }
 
-    function formatTimeAgo(seconds) {
-        if (seconds < 60) {
-            return seconds + ' seconds ago';
-        } else if (seconds < 3600) {
-            return Math.floor(seconds / 60) + ' minutes ago';
-        } else {
-            return Math.floor(seconds / 3600) + ' hours ago';
-        }
-    }
-
+    // --- Geolocation ---
     function startWatchingPosition() {
-        if ('geolocation' in navigator) {
-            startTrackingBtn.disabled = true;
-            stopTrackingBtn.disabled = false;
-
-            startLocationUpdateInterval();
-
-            navigator.geolocation.getCurrentPosition(handlePosition, handlePositionError, {
-                enableHighAccuracy: true,
-                timeout: 10000,
-            });
-
-            watchId = navigator.geolocation.watchPosition(handlePosition, handlePositionError, {
-                enableHighAccuracy: true,
-                maximumAge: 0,
-                timeout: 10000,
-            });
-        } else {
-            showError('Geolocation is not supported by your browser.');
-            startTrackingBtn.disabled = true;
-            stopTrackingBtn.disabled = true;
-        }
-    }
-
-    function startLocationUpdateInterval() {
-        if (updateInterval) {
-            clearInterval(updateInterval);
+        if (!navigator.geolocation) {
+            alert('Geolocation is not supported by this browser.');
+            return;
         }
 
-        updateInterval = setInterval(() => {
-            if (pendingLocationUpdate && lastPositionData) {
-                sendLocationUpdate(lastPositionData);
-                pendingLocationUpdate = false;
-            }
-        }, UPDATE_DELAY);
-    }
+        console.log('Starting position watch');
+        isTracking = true;
+        updateLocationToggleButton();
 
-    function stopLocationUpdateInterval() {
-        if (updateInterval) {
-            clearInterval(updateInterval);
-            updateInterval = null;
-        }
-    }
-
-    function handlePosition(position) {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        const accuracy = position.coords.accuracy;
-
-        coordsElement.innerHTML = `
-            <i class="fas fa-crosshairs"></i> Your location: 
-            Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}
-        `;
-
-        const userData = {
-            userId: currentUserId,
-            lat: lat,
-            lng: lng,
-            accuracy: accuracy,
-            timestamp: Date.now(),
-            showLocationToEveryone: showLocationCheckbox ? showLocationCheckbox.checked : false,
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000,
         };
 
-        updateUserMarker(userData);
+        watchId = navigator.geolocation.watchPosition(
+            (pos) => {
+                const { latitude, longitude, accuracy } = pos.coords;
+                console.log('Position update:', { latitude, longitude, accuracy });
 
-        lastPositionData = userData;
-        pendingLocationUpdate = true;
+                if (coordsElement) {
+                    coordsElement.innerHTML = `<i class="fas fa-crosshairs"></i> Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
+                }
 
-        if (!lastSentPosition || calculateDistance(lastSentPosition, [lat, lng]) > 10) {
-            sendLocationUpdate(userData);
-            pendingLocationUpdate = false;
-            lastSentPosition = [lat, lng];
-        }
-    }
+                sendLocation(latitude, longitude, accuracy);
+            },
+            (error) => {
+                console.error('Geolocation error:', error);
+                let errorMessage = 'Location error: ';
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage += 'Location access denied by user.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage += 'Location information unavailable.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage += 'Location request timed out.';
+                        break;
+                    default:
+                        errorMessage += 'Unknown error occurred.';
+                        break;
+                }
 
-    function calculateDistance(pos1, pos2) {
-        if (!pos1 || !pos2) return 10000;
-
-        const latDiff = pos1[0] - pos2[0];
-        const lngDiff = pos1[1] - pos2[1];
-        return Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111000;
-    }
-
-    function sendLocationUpdate(userData) {
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify(userData));
-            lastSentPosition = [userData.lat, userData.lng];
-        }
-    }
-
-    function handlePositionError(error) {
-        console.error('Error tracking location:', error);
-
-        let errorMessage = 'Location error: ';
-
-        switch (error.code) {
-            case error.PERMISSION_DENIED:
-                errorMessage += 'Location permission denied. Please enable location services.';
-                break;
-            case error.POSITION_UNAVAILABLE:
-                errorMessage += 'Location information is unavailable.';
-                break;
-            case error.TIMEOUT:
-                errorMessage += 'Request to get location timed out.';
-                break;
-            default:
-                errorMessage += 'An unknown error occurred.';
-        }
-
-        showError(errorMessage);
-        stopWatchingPosition();
+                if (coordsElement) {
+                    coordsElement.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${errorMessage}`;
+                }
+            },
+            options
+        );
     }
 
     function stopWatchingPosition() {
+        console.log('Stopping position watch');
         if (watchId !== null) {
             navigator.geolocation.clearWatch(watchId);
             watchId = null;
         }
 
-        stopLocationUpdateInterval();
+        isTracking = false;
+        updateLocationToggleButton();
 
-        startTrackingBtn.disabled = false;
-        stopTrackingBtn.disabled = true;
-
-        if (socket && socket.readyState === WebSocket.OPEN && currentUserId) {
-            socket.send(
-                JSON.stringify({
-                    userId: currentUserId,
-                    type: 'disconnect',
-                })
-            );
+        if (coordsElement) {
+            coordsElement.innerHTML = '<i class="fas fa-crosshairs"></i> Location sharing stopped';
         }
 
-        if (userMarkers.has(currentUserId)) {
-            removeUserMarker(currentUserId);
-        }
-
-        coordsElement.innerHTML = '<i class="fas fa-crosshairs"></i> Waiting for location...';
-    }
-
-    function connectWebSocket(token) {
-        updateConnectionStatus('Connecting to server...');
-
-        if (reconnectTimeout) {
-            clearTimeout(reconnectTimeout);
-        }
-
-        if (socket) {
-            socket.close();
-        }
-
-        try {
-            const wsUrl = `${WS_BASE_URL}/?token=${encodeURIComponent(token)}`;
-            socket = new WebSocket(wsUrl);
-
-            socket.onopen = handleSocketOpen;
-            socket.onclose = handleSocketClose;
-            socket.onerror = handleSocketError;
-            socket.onmessage = handleSocketMessage;
-        } catch (error) {
-            console.error('Error creating WebSocket:', error);
-            handleSocketError(error);
+        // Remove current user's marker and data
+        removeUserMarker(currentUserId);
+        if (currentUserId) {
+            yUsers.delete(currentUserId);
         }
     }
 
-    function handleSocketOpen() {
-        console.log('Connected to WebSocket server');
-        updateConnectionStatus('Connected to server', true);
-        reconnectAttempts = 0;
-        startTrackingBtn.disabled = false;
-    }
-
-    function handleSocketClose(event) {
-        console.log('Disconnected from WebSocket server', event);
-        updateConnectionStatus('Disconnected from server', false);
-
-        stopWatchingPosition();
-        startTrackingBtn.disabled = true;
-        stopTrackingBtn.disabled = true;
-
-        if (reconnectAttempts < maxReconnectAttempts) {
-            updateConnectionStatus(
-                `Reconnecting (${reconnectAttempts + 1}/${maxReconnectAttempts})...`,
-                false
-            );
-
-            reconnectTimeout = setTimeout(() => {
-                const token = localStorage.getItem('token');
-                if (token) {
-                    connectWebSocket(token);
-                }
-            }, reconnectDelay);
-
-            reconnectAttempts++;
+    function toggleLocationSharing() {
+        if (isTracking) {
+            stopWatchingPosition();
         } else {
-            updateConnectionStatus('Failed to connect. Please refresh the page.', false);
-            clearAllMarkers();
+            startWatchingPosition();
         }
     }
 
-    function handleSocketError(error) {
-        console.error('WebSocket Error:', error);
-        updateConnectionStatus('Connection error', false);
+    // --- Event Listeners ---
+    if (locationToggleBtn) {
+        locationToggleBtn.addEventListener('click', toggleLocationSharing);
     }
-
-    function handleSocketMessage(event) {
-        try {
-            let data;
-
-            if (event.data instanceof Blob) {
-                const reader = new FileReader();
-
-                reader.onload = function () {
-                    try {
-                        const jsonData = JSON.parse(reader.result);
-                        processIncomingData(jsonData);
-                    } catch (error) {
-                        console.error('Error parsing Blob data as JSON:', error);
-                    }
-                };
-
-                reader.onerror = function () {
-                    console.error('Error reading Blob data:', reader.error);
-                };
-
-                reader.readAsText(event.data);
-            } else {
-                try {
-                    data = JSON.parse(event.data);
-
-                    if (Array.isArray(data)) {
-                        data.forEach((userData) => {
-                            processIncomingData(userData);
-                        });
-                    } else {
-                        processIncomingData(data);
-                    }
-                } catch (error) {
-                    console.error('Error parsing text data as JSON:', error, event.data);
-                }
-            }
-        } catch (error) {
-            console.error('Error in onmessage handler:', error);
-        }
-    }
-
-    function processIncomingData(data) {
-        if (!data || typeof data !== 'object') {
-            console.error('Invalid data format:', data);
-            return;
-        }
-
-        if (data.type === 'disconnect') {
-            if (data.userId) {
-                removeUserMarker(data.userId);
-            }
-            return;
-        }
-
-        if (data.userId && data.lat !== undefined && data.lng !== undefined) {
-            updateUserMarker(data);
-        } else {
-            console.error('Missing required location data:', data);
-        }
-    }
-
-    function login(username, password) {
-        loginError.style.display = 'none';
-        loginError.textContent = '';
-
-        fetch(`${API_BASE_URL}/login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ username: username, password: password }),
-        })
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error('Invalid username or password');
-                }
-                return response.json();
-            })
-            .then((data) => {
-                localStorage.setItem('token', data.token);
-                currentUserId = data.user.id;
-
-                showApp();
-                connectWebSocket(data.token);
-            })
-            .catch((error) => {
-                showError(error.message);
-            });
-    }
-
-    function logout() {
-        stopWatchingPosition();
-        localStorage.removeItem('token');
-        currentUserId = null;
-
-        if (socket) {
-            socket.close();
-            socket = null;
-        }
-
-        clearAllMarkers();
-        showLogin();
-    }
-
-    function showError(message) {
-        loginError.textContent = message;
-        loginError.style.display = 'block';
-    }
-
-    loginForm.addEventListener('submit', function (e) {
-        e.preventDefault();
-
-        const username = document.getElementById('username').value.trim();
-        const password = document.getElementById('password').value.trim();
-
-        if (username && password) {
-            login(username, password);
-        } else {
-            showError('Please enter both username and password');
-        }
-    });
-
-    logoutButton.addEventListener('click', logout);
-
-    startTrackingBtn.addEventListener('click', startWatchingPosition);
-
-    stopTrackingBtn.addEventListener('click', stopWatchingPosition);
-
-    recenterMapBtn.addEventListener('click', function () {
-        if (lastKnownPosition) {
-            map.setView(lastKnownPosition, 15);
-        } else if (userMarkers.size > 0) {
-            const firstMarker = userMarkers.values().next().value;
-            map.setView(firstMarker.marker.getLatLng(), 15);
-        }
-    });
 
     if (showLocationCheckbox) {
-        showLocationCheckbox.addEventListener('change', function () {
-            if (lastPositionData) {
-                lastPositionData.showLocationToEveryone = this.checked;
-
-                if (socket && socket.readyState === WebSocket.OPEN) {
-                    const visibilityUpdate = {
-                        userId: currentUserId,
-                        type: 'visibility',
-                        showLocationToEveryone: this.checked,
-                    };
-
-                    socket.send(JSON.stringify(visibilityUpdate));
-
-                    if (lastPositionData.lat && lastPositionData.lng) {
-                        sendLocationUpdate(lastPositionData);
-                        pendingLocationUpdate = false;
-                    }
+        showLocationCheckbox.addEventListener('change', () => {
+            if (currentUserId && watchId !== null) {
+                const currentData = yUsers.get(currentUserId);
+                if (currentData) {
+                    sendLocation(currentData.lat, currentData.lng, currentData.accuracy);
                 }
             }
         });
     }
 
-    window.addEventListener('beforeunload', function () {
-        stopWatchingPosition();
-
-        if (socket && socket.readyState === WebSocket.OPEN && currentUserId) {
-            socket.send(
-                JSON.stringify({
-                    userId: currentUserId,
-                    type: 'disconnect',
-                })
-            );
-        }
-    });
-
-    setInterval(updateUsersList, 10000);
-
-    setInterval(function () {
-        const now = Date.now();
-        const staleTimeout = 5 * 60 * 1000;
-
-        userMarkers.forEach((markerData, userId) => {
-            if (userId !== currentUserId && now - markerData.lastUpdated > staleTimeout) {
-                removeUserMarker(userId);
+    if (recenterMapBtn) {
+        recenterMapBtn.addEventListener('click', () => {
+            if (currentUserId && userMarkers.has(currentUserId)) {
+                const markerData = userMarkers.get(currentUserId);
+                const position = markerData.marker.getLatLng();
+                map.setView(position, 15);
             }
         });
-    }, 60000);
+    }
 
-    checkAuth();
+    async function attemptAutoLogin() {
+        const token = getAuthToken();
+        if (!token) {
+            showLogin();
+            return;
+        }
+
+        console.log('Attempting auto-login with stored token...');
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/verify-token`, {
+                method: 'GET',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (!res.ok) {
+                throw new Error('Token validation failed');
+            }
+
+            const data = await res.json();
+
+            saveAuthToken(token);
+            currentUserId = data.user.id;
+            currentUsername = data.user.username;
+
+            console.log('Auto-login successful for:', currentUsername);
+
+            initializeProvider();
+            showApp(loginContainer, appContainer);
+            updateLocationToggleButton();
+            updateUserWelcome(currentUsername, header);
+        } catch (err) {
+            console.error('Auto-login failed:', err.message);
+            removeAuthToken();
+            showLogin(loginContainer, appContainer, loginError, loginForm);
+        }
+    }
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username')?.value.trim();
+            const password = document.getElementById('password')?.value.trim();
+
+            if (!username || !password) {
+                showLoginError('Please enter both username and password', loginError);
+                return;
+            }
+
+            showLoginLoading(true, loginForm);
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password }),
+                });
+
+                if (!res.ok) {
+                    throw new Error('Invalid username or password');
+                }
+
+                const data = await res.json();
+
+                if (data.token) {
+                    saveAuthToken(data.token);
+                }
+
+                currentUserId = data.user.id;
+                currentUsername = data.user.username || username;
+                console.log('Logged in as:', currentUserId);
+
+                initializeProvider();
+                showApp(loginContainer, appContainer);
+                updateLocationToggleButton();
+                updateUserWelcome(currentUsername, header);
+            } catch (err) {
+                console.error('Login error:', err);
+                showLoginError(err.message, loginError);
+            } finally {
+                showLoginLoading(false, loginForm);
+            }
+        });
+    }
+
+    if (logoutButton) {
+        logoutButton.addEventListener('click', async () => {
+            stopWatchingPosition();
+
+            if (authToken) {
+                try {
+                    await fetch(`${API_BASE_URL}/logout`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${authToken}`,
+                        },
+                    });
+                } catch (error) {
+                    console.error('Logout API call failed:', error);
+                }
+            }
+
+            if (provider) {
+                provider.destroy();
+                provider = null;
+            }
+
+            userMarkers.forEach((_, userId) => removeUserMarker(userId));
+            userMarkers.clear();
+
+            currentUserId = null;
+            currentUsername = null;
+
+            removeAuthToken();
+
+            isTracking = false;
+            updateLocationToggleButton();
+            showLogin(loginContainer, appContainer, loginError, loginForm);
+        });
+    }
+    attemptAutoLogin();
 });

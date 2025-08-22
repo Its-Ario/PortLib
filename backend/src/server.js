@@ -7,7 +7,7 @@ import SignalingServer from './signalingServer.js';
 import logger from './logger.js';
 
 config({
-    path: '../.env'
+    path: '../.env',
 });
 
 const PORT = process.env.PORT || 3000;

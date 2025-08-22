@@ -14,7 +14,7 @@ function generateToken(user) {
     });
 }
 
-router.post('/verify-token', auth, async (req, res) => {
+router.get('/verify-token', auth, async (req, res) => {
     res.status(200).json({ ok: true, user: req.user });
 });
 
@@ -37,7 +37,7 @@ router.post('/login', async (req, res) => {
         const token = generateToken(user);
 
         const userData = {
-            id: user.id,
+            id: user._id.toString(),
             name: user.name,
         };
 
@@ -49,17 +49,23 @@ router.post('/login', async (req, res) => {
 });
 
 router.post('/register', async (req, res) => {
-    const { name, email, username, password } = req.body;
-    const hashedPassword = await hash(password, 10);
-    const newUser = new userService.registerUser({
-        name,
-        email,
-        username,
-        passwordHash: hashedPassword,
-        role: 'MEMBER',
-    });
-    const savedUser = await newUser.save();
-    res.status(201).json(savedUser);
+    try {
+        const { name, email, username, password } = req.body;
+        const hashedPassword = await hash(password, 10);
+
+        const newUser = await userService.registerUser({
+            name,
+            email,
+            username,
+            passwordHash: hashedPassword,
+            role: 'MEMBER',
+        });
+
+        res.status(201).json(newUser);
+    } catch (error) {
+        logger.error('Register error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
 router.patch('/changepassword', auth, async (req, res) => {
@@ -72,9 +78,24 @@ router.patch('/changepassword', auth, async (req, res) => {
 
     user.passwordHash = await hash(newPassword, 10);
     user.tokenVersion += 1;
-    await user.save();
+    await userService.updateTokenVersion(user._id.toString());
 
     res.json({ message: 'Password updated successfully' });
+});
+
+router.post('/logout', auth, async (req, res) => {
+    try {
+        const user = req.user;
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        user.tokenVersion += 1;
+        await userService.updateTokenVersion(user._id.toString());
+
+        res.json({ message: 'Logged out successfully' });
+    } catch (error) {
+        logger.error('Logout error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
 export default router;

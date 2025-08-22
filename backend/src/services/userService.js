@@ -120,6 +120,27 @@ class UserService {
             throw error;
         }
     }
+
+    async updateTokenVersion(userId) {
+        try {
+            logger.info(`Incrementing tokenVersion for user: ${userId}`);
+            const user = await User.findByIdAndUpdate(
+                userId,
+                { $inc: { tokenVersion: 1 } },
+                { new: true }
+            ).select('-passwordHash');
+
+            if (!user) {
+                logger.warn(`User not found for tokenVersion update: ${userId}`);
+                throw new Error('User not found');
+            }
+
+            return user;
+        } catch (error) {
+            logger.error(`Failed to update tokenVersion: ${error.message}`, error);
+            throw error;
+        }
+    }
 }
 
 export default new UserService();

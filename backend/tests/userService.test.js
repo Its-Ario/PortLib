@@ -106,4 +106,24 @@ describe('userService', () => {
             expect(result[0].username).toBe(user.username);
         });
     });
+
+    describe('updateTokenVersion', () => {
+        it('should increment tokenVersion for a user', async () => {
+            const user = await createUser();
+            user.tokenVersion = 0;
+            await user.save();
+
+            const updatedUser = await userService.updateTokenVersion(user.id.toString());
+
+            expect(updatedUser.tokenVersion).toBe(1);
+        });
+
+        it('should throw an error if the user is not found', async () => {
+            const userId = new Types.ObjectId();
+
+            await expect(userService.updateTokenVersion(userId.toString())).rejects.toThrow(
+                'User not found'
+            );
+        });
+    });
 });
