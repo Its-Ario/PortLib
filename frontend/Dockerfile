@@ -2,12 +2,11 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json ../pnpm-lock.yaml* ./
+COPY frontend/package.json pnpm-lock.yaml ./ 
+COPY frontend ./
 
 RUN npm install -g pnpm \
     && pnpm install --frozen-lockfile
-
-COPY . .
 
 RUN pnpm build
 
