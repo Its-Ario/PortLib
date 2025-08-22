@@ -16,6 +16,7 @@
     },
     "dependencies": {
         "leaflet": "^1.9.4",
+        "y-protocols": "^1.0.6",
         "y-webrtc": "^10.3.0",
         "yjs": "^13.6.27"
     }
