@@ -1,0 +1,22 @@
+services:
+    backend:
+        build: ./backend
+        container_name: portlib-backend
+        ports:
+            - '${BACKEND_PORT}:3000'
+        env_file:
+            - .env
+        volumes:
+            - ./logs/backend:/app/logs # persistent logs
+        restart: unless-stopped
+
+    frontend:
+        build: ./frontend
+        container_name: portlib-frontend
+        ports:
+            - '${FRONTEND_PORT}:80'
+        env_file:
+            - .env
+        volumes:
+            - ./logs/frontend:/usr/share/nginx/html/logs
+        restart: unless-stopped
