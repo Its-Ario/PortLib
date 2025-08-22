@@ -30,6 +30,6 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 20
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - name: Run frontend tests
         run: npx vitest run --environment=jsdom
