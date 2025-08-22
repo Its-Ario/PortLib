@@ -6,7 +6,7 @@ COPY backend/package.json pnpm-lock.yaml ./
 COPY backend ./
 
 RUN npm install -g pnpm \
-    && pnpm install --frozen-lockfile
+    && pnpm install --filter backend --frozen-lockfile
 
 COPY . .
 

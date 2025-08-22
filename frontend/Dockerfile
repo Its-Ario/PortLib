@@ -6,9 +6,9 @@ COPY frontend/package.json pnpm-lock.yaml ./
 COPY frontend ./
 
 RUN npm install -g pnpm \
-    && pnpm install --frozen-lockfile
+    && pnpm install --filter frontend --frozen-lockfile
 
-RUN pnpm build
+RUN pnpm build --filter frontend
 
 FROM nginx:alpine
 
