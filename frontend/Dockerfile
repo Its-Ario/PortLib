@@ -2,7 +2,7 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY pnpm-lock.yaml package.json ./
+COPY pnpm-lock.yaml package.json pnpm-workspace.yaml ./
 
 COPY frontend/package.json ./frontend/
 
