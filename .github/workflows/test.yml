@@ -1,129 +1,144 @@
 name: CI
 
 on:
-    push:
-        branches: [main]
-    pull_request:
-        branches: [main]
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-    backend:
-        runs-on: ubuntu-latest
-        defaults:
-            run:
-                working-directory: ./backend
-        steps:
-            - uses: actions/checkout@v3
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    steps:
+      - uses: actions/checkout@v3
 
-            - uses: actions/setup-node@v3
-              with:
-                  node-version: 20
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
 
-            - name: Install pnpm
-              run: npm install -g pnpm
+      - name: Install pnpm
+        run: npm install -g pnpm
 
-            - name: Cache pnpm dependencies
-              uses: actions/cache@v3
-              with:
-                  path: |
-                      ~/.pnpm-store
-                      node_modules
-                  key: pnpm-backend-${{ hashFiles('**/pnpm-lock.yaml') }}
-                  restore-keys: pnpm-backend-
+      - name: Cache backend dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pnpm-store
+            node_modules
+          key: pnpm-backend-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: pnpm-backend-
 
-            - name: Cache MongoDB binaries
-              uses: actions/cache@v3
-              with:
-                  path: ~/.cache/mongodb-binaries
-                  key: mongo-binaries-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
-                  restore-keys: |
-                      mongo-binaries-${{ runner.os }}-
+      - name: Cache MongoDB binaries
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mongo-binaries-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            mongo-binaries-${{ runner.os }}-
 
-            - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-            - name: Run tests
-              run: MONGOMS_DOWNLOAD_DIR=$HOME/.cache/mongodb-binaries pnpm exec npm test
+      - name: Run backend tests
+        run: MONGOMS_DOWNLOAD_DIR=$HOME/.cache/mongodb-binaries pnpm exec npm test
 
-    frontend:
-        runs-on: ubuntu-latest
-        defaults:
-            run:
-                working-directory: ./frontend
-        steps:
-            - uses: actions/checkout@v3
+      - name: Cache Docker layers (backend)
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache-backend
+          key: ${{ runner.os }}-docker-backend-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-docker-backend-
 
-            - uses: actions/setup-node@v3
-              with:
-                  node-version: 20
+      - name: Build backend Docker image with cache
+        uses: docker/setup-buildx-action@v2
+      - run: |
+          docker buildx build \
+            -f backend/Dockerfile -t portlib-backend ./backend \
+            --cache-from=type=local,src=/tmp/.buildx-cache-backend \
+            --cache-to=type=local,dest=/tmp/.buildx-cache-backend-new,mode=max
+          mv /tmp/.buildx-cache-backend-new /tmp/.buildx-cache-backend
 
-            - name: Install pnpm
-              run: npm install -g pnpm
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - uses: actions/checkout@v3
 
-            # Cache pnpm store and node_modules
-            - name: Cache pnpm dependencies
-              uses: actions/cache@v3
-              with:
-                  path: |
-                      ~/.pnpm-store
-                      node_modules
-                  key: pnpm-frontend-${{ hashFiles('**/pnpm-lock.yaml') }}
-                  restore-keys: pnpm-frontend-
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
 
-            - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+      - name: Install pnpm
+        run: npm install -g pnpm
 
-            - name: Run frontend tests
-              run: pnpm exec vitest run --environment=jsdom
+      - name: Cache frontend dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pnpm-store
+            node_modules
+          key: pnpm-frontend-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: pnpm-frontend-
 
-            - name: Cache Docker layers
-              uses: actions/cache@v3
-              with:
-                path: /tmp/.buildx-cache
-                key: ${{ runner.os }}-docker-${{ github.sha }}
-                restore-keys: |
-                  ${{ runner.os }}-docker-
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v2
+      - name: Run frontend tests
+        run: pnpm exec vitest run --environment=jsdom
 
-            - name: Build Docker images with cache
-              run: |
-                docker buildx build \
-                  --cache-from=type=local,src=/tmp/.buildx-cache \
-                  --cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max \
-                  -f backend/Dockerfile -t portlib-backend ./backend
-                
-                docker buildx build \
-                  --cache-from=type=local,src=/tmp/.buildx-cache \
-                  --cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max \
-                  -f frontend/Dockerfile -t portlib-frontend ./frontend
+      - name: Cache Docker layers (frontend)
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache-frontend
+          key: ${{ runner.os }}-docker-frontend-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-docker-frontend-
 
-                mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+      - name: Build frontend Docker image with cache
+        uses: docker/setup-buildx-action@v2
+      - run: |
+          docker buildx build \
+            -f frontend/Dockerfile -t portlib-frontend ./frontend \
+            --cache-from=type=local,src=/tmp/.buildx-cache-frontend \
+            --cache-to=type=local,dest=/tmp/.buildx-cache-frontend-new,mode=max
+          mv /tmp/.buildx-cache-frontend-new /tmp/.buildx-cache-frontend
 
-            - name: Add VPS to known hosts
-              run: |
-                mkdir -p ~/.ssh
-                ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
-            - name: Deploy to VPS
-              uses: appleboy/ssh-action@v0.1.9
-              with:
-                host: ${{ secrets.VPS_HOST }}
-                username: ${{ secrets.VPS_USER }}
-                key: ${{ secrets.VPS_SSH_KEY }}
-                script: |
-                  cd ~/portlib
-                  git fetch origin main
-                  git reset --hard origin/main
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v3
 
-                  echo "Pulling latest images if exist"
-                  docker compose pull
+      - name: Add VPS to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
-                  echo "Building only changed images"
-                  docker compose build --pull --parallel
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v0.1.9
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd ~/portlib
+            git fetch origin main
+            git reset --hard origin/main
 
-                  echo "Deploy containers"
-                  docker compose up -d --remove-orphans
+            echo "Pulling latest images if exist"
+            docker compose pull
 
-                  echo "Prune unused Docker resources"
-                  docker system prune -f
+            echo "Building only changed images"
+            docker compose build --pull --parallel
+
+            echo "Deploy containers"
+            docker compose up -d --remove-orphans
+
+            echo "Prune unused Docker resources"
+            docker system prune -f
