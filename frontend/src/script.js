@@ -368,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
 
             saveAuthToken(token);
-            currentUserId = data.user.id;
+            currentUserId = data.user._id;
             currentUsername = data.user.username;
 
             console.log('Auto-login successful for:', currentUsername);
