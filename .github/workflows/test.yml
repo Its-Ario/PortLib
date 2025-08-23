@@ -111,30 +111,25 @@ jobs:
                     --cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max
 
             - run: mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-            - name: Add VPS to known hosts
+
+            - name: Deploy to VPS via rsync
+              env:
+                  SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
               run: |
                   mkdir -p ~/.ssh
+                  echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+                  chmod 600 ~/.ssh/id_rsa
                   ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+                  rsync -avz --delete ./backend ./frontend docker-compose.yml ~/.env root@${{ secrets.VPS_HOST }}:~/portlib/
 
-            - name: Deploy to VPS
-              uses: appleboy/ssh-action@v0.1.9
-              with:
-                  host: ${{ secrets.VPS_HOST }}
-                  username: ${{ secrets.VPS_USER }}
-                  key: ${{ secrets.VPS_SSH_KEY }}
-                  script: |
-                      cd ~/portlib
-                      git fetch origin main
-                      git reset --hard origin/main
-
-                      echo "Pulling latest images if exist"
-                      docker compose pull
-
-                      echo "Building only changed images"
-                      docker compose build --pull --parallel
-
-                      echo "Deploy containers"
-                      docker compose up -d --remove-orphans
-
-                      echo "Prune unused Docker resources"
-                      docker system prune -f
+            - name: Run deployment on VPS
+              env:
+                  SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+              run: |
+                  ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@${{ secrets.VPS_HOST }} << 'EOF'
+                    cd ~/portlib
+                    docker compose pull
+                    docker compose build --pull --parallel
+                    docker compose up -d --remove-orphans
+                    docker system prune -f
+                  EOF
