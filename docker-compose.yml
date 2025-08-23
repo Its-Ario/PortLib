@@ -1,8 +1,8 @@
 services:
     backend:
         build:
-            context: ./backend
-            dockerfile: Dockerfile
+            context: .
+            dockerfile: backend/Dockerfile
         container_name: portlib-backend
         ports:
             - '${BACKEND_PORT}:3000'
@@ -14,8 +14,8 @@ services:
 
     frontend:
         build:
-            context: ./frontend
-            dockerfile: Dockerfile
+            context: .
+            dockerfile: frontend/Dockerfile
         container_name: portlib-frontend
         ports:
             - '${FRONTEND_PORT}:80'
