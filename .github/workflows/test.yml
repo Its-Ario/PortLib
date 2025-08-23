@@ -81,59 +81,24 @@ jobs:
         steps:
             - uses: actions/checkout@v3
 
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v2
-
-            - name: Cache Docker layers
-              uses: actions/cache@v3
-              with:
-                  path: /tmp/.buildx-cache
-                  key: ${{ runner.os }}-docker-${{ github.sha }}
-                  restore-keys: |
-                      ${{ runner.os }}-docker-
-
-            - name: Build backend image
-              run: |
-                  docker buildx build \
-                    -f backend/Dockerfile \
-                    -t portlib-backend \
-                    . \
-                    --cache-from=type=local,src=/tmp/.buildx-cache \
-                    --cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max
-
-            - name: Build frontend image
-              run: |
-                  docker buildx build \
-                    -f frontend/Dockerfile \
-                    -t portlib-frontend \
-                    . \
-                    --cache-from=type=local,src=/tmp/.buildx-cache \
-                    --cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max
-
-            - run: mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-
-            - name: Create .env file
-              run: |
-                  echo "${{ secrets.ENV_FILE }}" > .env
-
-            - name: Copy files to VPS
+            - name: Deploy to VPS via SSH
               env:
                   SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
               run: |
                   mkdir -p ~/.ssh
                   echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
                   chmod 600 ~/.ssh/id_rsa
-                  ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
-                  rsync -avz --delete ./ backend/ frontend/ docker-compose.yml .env root@${{ secrets.VPS_HOST }}:~/portlib/
 
-            - name: Run deployment on VPS
-              env:
-                  SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
-              run: |
-                  ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no root@${{ secrets.VPS_HOST }} << 'EOF'
+                  ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+                  ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
                     cd ~/portlib
-                    docker compose pull
-                    docker compose build --pull --parallel
-                    docker compose up -d --remove-orphans
-                    docker system prune -f
+                    git fetch origin main
+                    git reset --hard origin/main
+
+                    if [ ! -f .env ]; then
+                      echo "${ENV_FILE}" > .env
+                    fi
+
+                    docker compose up --build -d
                   EOF
