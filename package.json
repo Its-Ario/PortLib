@@ -17,14 +17,15 @@
     "format": "prettier --write 'backend/**/*.{js,ts,json,md}' 'frontend/**/*.{js,ts,css,html,json,md}'"
   },
   "devDependencies": {
-    "eslint": "^9.33.0",
+    "eslint": "^9.35.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-node": "^11.1.0",
     "prettier": "^3.6.2"
   },
   "dependencies": {
-    "@eslint/js": "^9.33.0",
-    "globals": "^16.3.0"
+    "@eslint/js": "^9.35.0",
+    "globals": "^16.4.0",
+    "pnpm": "^10.16.1"
   }
 }
