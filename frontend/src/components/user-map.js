@@ -165,7 +165,7 @@ export class UserMap extends LitElement {
                 this.isLoading = false;
                 this.requestUpdate();
 
-                this.map.invalidateSize(); 
+                this.map.invalidateSize();
 
                 this.dispatchEvent(
                     new CustomEvent('map-ready', {
