@@ -130,7 +130,7 @@ export class UserMap extends LitElement {
             :host .leaflet-popup-content {
                 font-family: inherit;
                 font-weight: 500;
-                color: var(--text-primary);
+                color: black;
             }
         `,
     ];
@@ -159,6 +159,12 @@ export class UserMap extends LitElement {
 
     firstUpdated() {
         this.initializeMap();
+    }
+
+    updated(changedProperties) {
+        if (changedProperties.has('users')) {
+            this._syncMarkersToUsers();
+        }
     }
 
     async initializeMap() {
@@ -191,6 +197,8 @@ export class UserMap extends LitElement {
                 this.isLoading = false;
                 this.requestUpdate();
 
+                this._syncMarkersToUsers();
+
                 this.dispatchEvent(
                     new CustomEvent('map-ready', {
                         bubbles: true,
@@ -215,8 +223,8 @@ export class UserMap extends LitElement {
         } else {
             const dotIcon = L.divIcon({
                 className: isCurrentUser ? 'current-user-dot' : 'user-dot',
-                iconSize: [12, 12],
-                iconAnchor: [6, 6],
+                iconSize: isCurrentUser ? [18, 18] : [16, 16],
+                iconAnchor: isCurrentUser ? [9, 9] : [8, 8],
             });
 
             const marker = L.marker([lat, lng], { icon: dotIcon }).addTo(this.map).bindPopup(`
@@ -315,6 +323,25 @@ export class UserMap extends LitElement {
             this.map.remove();
             this.map = null;
         }
+    }
+
+    _syncMarkersToUsers() {
+        if (!this.isReady() || !this.users) return;
+
+        const currentUsernames = new Set();
+
+        this.users.forEach((user) => {
+            currentUsernames.add(user.username);
+            if (user.lat !== undefined && user.lng !== undefined) {
+                this.upsertMarker(user.username, user.lat, user.lng, user.current, user.accuracy);
+            }
+        });
+
+        this.markers.forEach((markerData, username) => {
+            if (!currentUsernames.has(username)) {
+                this.removeMarker(username);
+            }
+        });
     }
 }
 

@@ -34,7 +34,7 @@ export class HeaderBar extends LitElement {
         }
 
         .container {
-            background: linear-gradient(135deg, var(--text-primary) 0%, #334155 100%);
+            background: #334155;
             color: white;
             padding: 1rem 1.5rem;
             display: flex;
