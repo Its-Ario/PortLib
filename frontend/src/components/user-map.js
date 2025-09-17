@@ -1,35 +1,8 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, unsafeCSS } from 'lit';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { globalStyles } from '../styles/global-styles';
-
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
-
-let DefaultIcon = L.icon({
-    iconUrl: icon,
-    iconRetinaUrl: iconRetina,
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    tooltipAnchor: [16, -28],
-    shadowSize: [41, 41],
-});
-L.Marker.prototype.options.icon = DefaultIcon;
-
-let CurrentUserIcon = L.icon({
-    iconUrl: icon,
-    iconRetinaUrl: iconRetina,
-    shadowUrl: iconShadow,
-    iconSize: [30, 48],
-    iconAnchor: [15, 48],
-    popupAnchor: [1, -40],
-    tooltipAnchor: [16, -28],
-    shadowSize: [48, 48],
-    className: 'current-user-marker',
-});
+import leafletStyles from 'leaflet/dist/leaflet.css?inline';
 
 export class UserMap extends LitElement {
     static properties = {
@@ -39,6 +12,9 @@ export class UserMap extends LitElement {
 
     static styles = [
         globalStyles,
+        css`
+            ${unsafeCSS(leafletStyles)}
+        `,
         css`
             :host {
                 display: block;
@@ -53,8 +29,58 @@ export class UserMap extends LitElement {
                 border-radius: inherit;
             }
 
-            :host ::ng-deep .current-user-marker {
+            :host .current-user-marker {
                 filter: hue-rotate(120deg) brightness(1.2);
+            }
+
+            .user-dot {
+                background-color: #667eea; /* Indigo */
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                border: 3px solid #ffffff;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+                transition: transform 0.2s ease-in-out;
+                cursor: pointer;
+            }
+            .user-dot:hover {
+                transform: scale(1.2);
+            }
+
+            .current-user-dot {
+                background-color: #22c55e; /* Green */
+                width: 18px;
+                height: 18px;
+                border: 3px solid #ffffff;
+                border-radius: 50%;
+                box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
+                z-index: 10;
+            }
+
+            .current-user-dot::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                background-color: transparent;
+                border: 3px solid rgba(34, 197, 94, 0.7);
+                animation: pulse 1.5s ease-out infinite;
+                z-index: -1;
+            }
+
+            @keyframes pulse {
+                0% {
+                    transform: translate(-50%, -50%) scale(0.5);
+                    opacity: 1;
+                }
+                100% {
+                    transform: translate(-50%, -50%) scale(2.5);
+                    opacity: 0;
+                }
             }
 
             .map-loading {
@@ -92,16 +118,16 @@ export class UserMap extends LitElement {
                 }
             }
 
-            :host ::ng-deep .leaflet-control-container {
+            :host .leaflet-control-container {
                 font-family: inherit;
             }
 
-            :host ::ng-deep .leaflet-popup-content-wrapper {
+            :host .leaflet-popup-content-wrapper {
                 border-radius: 8px;
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             }
 
-            :host ::ng-deep .leaflet-popup-content {
+            :host .leaflet-popup-content {
                 font-family: inherit;
                 font-weight: 500;
                 color: var(--text-primary);
@@ -179,23 +205,38 @@ export class UserMap extends LitElement {
         }
     }
 
-    upsertMarker(username, lat, lng, isCurrentUser = false) {
+    upsertMarker(username, lat, lng, isCurrentUser = false, accuracy = 20) {
         if (!this.map) return;
 
         if (this.markers.has(username)) {
-            this.markers.get(username).setLatLng([lat, lng]);
+            const { marker, circle } = this.markers.get(username);
+            marker.setLatLng([lat, lng]);
+            if (circle) circle.setLatLng([lat, lng]).setRadius(accuracy);
         } else {
-            const icon = isCurrentUser ? CurrentUserIcon : DefaultIcon;
-            const marker = L.marker([lat, lng], { icon }).addTo(this.map).bindPopup(`
-                    <div style="text-align: center;">
-                        <strong>${username}</strong>
-                        ${isCurrentUser ? '<br><small>(You)</small>' : ''}
-                        <br><small>Lat: ${lat.toFixed(6)}</small>
-                        <br><small>Lng: ${lng.toFixed(6)}</small>
-                    </div>
-                `);
+            const dotIcon = L.divIcon({
+                className: isCurrentUser ? 'current-user-dot' : 'user-dot',
+                iconSize: [12, 12],
+                iconAnchor: [6, 6],
+            });
 
-            this.markers.set(username, marker);
+            const marker = L.marker([lat, lng], { icon: dotIcon }).addTo(this.map).bindPopup(`
+                <div style="text-align:center;">
+                    <strong>${username}</strong>
+                    ${isCurrentUser ? '<br><small>(You)</small>' : ''}
+                    <br><small>Lat: ${lat.toFixed(6)}</small>
+                    <br><small>Lng: ${lng.toFixed(6)}</small>
+                </div>
+            `);
+
+            const accuracyCircle = L.circle([lat, lng], {
+                radius: accuracy,
+                color: isCurrentUser ? '#22c55e' : '#667eea',
+                opacity: 0.2,
+                fillOpacity: 0.1,
+                weight: 1,
+            }).addTo(this.map);
+
+            this.markers.set(username, { marker, circle: accuracyCircle });
 
             marker.on('click', () => {
                 this.dispatchEvent(

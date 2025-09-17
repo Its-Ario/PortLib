@@ -22,6 +22,13 @@ vi.mock('leaflet', () => {
         remove: vi.fn(),
     };
 
+    const mockCircle = {
+        addTo: vi.fn().mockReturnThis(),
+        remove: vi.fn().mockReturnThis(),
+        setLatLng: vi.fn().mockReturnThis(),
+        setRadius: vi.fn().mockReturnThis(),
+    };
+
     const mockTileLayer = {
         addTo: vi.fn().mockReturnThis(),
     };
@@ -32,13 +39,17 @@ vi.mock('leaflet', () => {
         })),
     }));
 
+    const mockDivIcon = vi.fn(() => ({}));
+
     return {
         default: {
             map: vi.fn(() => mockMap),
             marker: vi.fn(() => mockMarker),
             tileLayer: vi.fn(() => mockTileLayer),
             icon: vi.fn(() => ({})),
+            divIcon: mockDivIcon,
             featureGroup: mockFeatureGroup,
+            circle: vi.fn(() => mockCircle),
             Marker: {
                 prototype: {
                     options: { icon: {} },
@@ -50,6 +61,8 @@ vi.mock('leaflet', () => {
         tileLayer: vi.fn(() => mockTileLayer),
         icon: vi.fn(() => ({})),
         featureGroup: mockFeatureGroup,
+        divIcon: mockDivIcon,
+        circle: vi.fn(() => mockCircle),
         Marker: {
             prototype: {
                 options: { icon: {} },
@@ -103,13 +116,14 @@ describe('UserMap Component', () => {
 
     it('should update existing marker position', () => {
         element.upsertMarker('user1', 35.7, 51.4, false);
-        const initialMarker = element.markers.get('user1');
+        const initialMarkerData = element.markers.get('user1');
 
         element.upsertMarker('user1', 35.8, 51.5, false);
 
         expect(element.markers.size).toBe(1);
-        expect(element.markers.get('user1')).toBe(initialMarker);
-        expect(initialMarker.setLatLng).toHaveBeenCalledWith([35.8, 51.5]);
+        expect(element.markers.get('user1')).toBe(initialMarkerData);
+
+        expect(initialMarkerData.marker.setLatLng).toHaveBeenCalledWith([35.8, 51.5]);
     });
 
     it('should remove a user marker', () => {

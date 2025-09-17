@@ -1,5 +1,5 @@
 import './components/app-view.js';
-import { getAuthToken, saveAuthToken, removeAuthToken } from './utils/auth.js';
+import { saveAuthToken, removeAuthToken } from './utils/auth.js';
 import * as Y from 'yjs';
 import { WebrtcProvider } from 'y-webrtc';
 import * as awarenessProtocol from 'y-protocols/awareness.js';
@@ -7,7 +7,6 @@ import * as awarenessProtocol from 'y-protocols/awareness.js';
 document.addEventListener('DOMContentLoaded', () => {
     const app = document.querySelector('#app');
 
-    const API_BASE_URL = '/api';
     const doc = new Y.Doc();
     const yUsers = doc.getMap('users');
     let provider = null;
@@ -202,38 +201,4 @@ document.addEventListener('DOMContentLoaded', () => {
     app.addEventListener('map-ready', () => {
         console.log('Map is ready');
     });
-
-    async function attemptAutoLogin() {
-        const token = getAuthToken();
-        if (!token) return;
-
-        try {
-            const res = await fetch(`${API_BASE_URL}/verify-token`, {
-                method: 'GET',
-                headers: { Authorization: `Bearer ${token}` },
-            });
-
-            if (!res.ok) throw new Error('Token invalid');
-
-            const data = await res.json();
-            app.currentUser = data.user;
-            currentUserId = data.user._id;
-
-            const map = app.map;
-            if (map) {
-                map.setCurrentUser(data.user.username);
-            }
-
-            initializeProvider();
-        } catch (err) {
-            console.error('Auto-login failed', err);
-            removeAuthToken();
-        }
-    }
-
-    if (app.map) {
-        attemptAutoLogin();
-    } else {
-        app.addEventListener('map-ready', attemptAutoLogin);
-    }
 });
