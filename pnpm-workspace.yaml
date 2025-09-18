@@ -1,0 +1,9 @@
+packages:
+  - backend
+  - frontend
+
+onlyBuiltDependencies:
+  - bcrypt
+  - esbuild
+  - mongodb-memory-server
+  - unrs-resolver

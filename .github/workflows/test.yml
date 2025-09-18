@@ -1,0 +1,104 @@
+name: CI/CD
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+
+jobs:
+    backend:
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: ./backend
+        steps:
+            - uses: actions/checkout@v3
+
+            - uses: actions/setup-node@v3
+              with:
+                  node-version: 20
+
+            - name: Install pnpm
+              run: npm install -g pnpm
+
+            - name: Cache backend dependencies
+              uses: actions/cache@v3
+              with:
+                  path: |
+                      ~/.pnpm-store
+                      node_modules
+                  key: pnpm-backend-${{ hashFiles('**/pnpm-lock.yaml') }}
+                  restore-keys: pnpm-backend-
+
+            - name: Cache MongoDB binaries
+              uses: actions/cache@v3
+              with:
+                  path: ~/.cache/mongodb-binaries
+                  key: mongo-binaries-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+                  restore-keys: |
+                      mongo-binaries-${{ runner.os }}-
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Run backend tests
+              run: MONGOMS_DOWNLOAD_DIR=$HOME/.cache/mongodb-binaries pnpm exec npm test
+
+    frontend:
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: ./frontend
+        steps:
+            - uses: actions/checkout@v3
+
+            - uses: actions/setup-node@v3
+              with:
+                  node-version: 20
+
+            - name: Install pnpm
+              run: npm install -g pnpm
+
+            - name: Cache frontend dependencies
+              uses: actions/cache@v3
+              with:
+                  path: |
+                      ~/.pnpm-store
+                      node_modules
+                  key: pnpm-frontend-${{ hashFiles('**/pnpm-lock.yaml') }}
+                  restore-keys: pnpm-frontend-
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Run frontend tests
+              run: pnpm exec vitest run --environment=jsdom
+
+    build-deploy:
+        runs-on: ubuntu-latest
+        needs: [backend, frontend]
+        steps:
+            - uses: actions/checkout@v3
+
+            - name: Deploy to VPS via SSH
+              env:
+                  SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+              run: |
+                  mkdir -p ~/.ssh
+                  echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+                  chmod 600 ~/.ssh/id_rsa
+
+                  ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+                  ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+                    cd ~/portlib
+                    git fetch origin main
+                    git reset --hard origin/main
+
+                    if [ ! -f .env ]; then
+                      echo "${ENV_FILE}" > .env
+                    fi
+
+                    docker compose up --build -d
+                  EOF

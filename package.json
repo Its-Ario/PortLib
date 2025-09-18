@@ -1,0 +1,31 @@
+{
+  "name": "portlib",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "install-all": "pnpm install --w",
+    "dev:backend": "pnpm --filter backend run dev",
+    "dev:frontend": "pnpm --filter frontend run dev",
+    "start:backend": "pnpm --filter backend start",
+    "build:frontend": "pnpm --filter frontend run build",
+    "test:backend": "pnpm --filter backend test",
+    "test:frontend": "pnpm --filter frontend test",
+    "lint": "eslint backend/**/*.js frontend/**/*.js --fix",
+    "format": "prettier --write 'backend/**/*.{js,ts,json,md}' 'frontend/**/*.{js,ts,css,html,json,md}'"
+  },
+  "devDependencies": {
+    "eslint": "^9.35.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-node": "^11.1.0",
+    "prettier": "^3.6.2"
+  },
+  "dependencies": {
+    "@eslint/js": "^9.35.0",
+    "globals": "^16.4.0",
+    "pnpm": "^10.16.1"
+  }
+}

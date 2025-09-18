@@ -1,0 +1,26 @@
+{
+    "name": "frontend",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "test": "vitest run",
+        "build": "vite build",
+        "preview": "vite preview"
+    },
+    "devDependencies": {
+        "@open-wc/testing": "^4.0.0",
+        "@web/test-runner": "^0.20.2",
+        "jsdom": "^26.1.0",
+        "vite": "^7.1.4",
+        "vitest": "^3.2.4"
+    },
+    "dependencies": {
+        "leaflet": "^1.9.4",
+        "lit": "^3.3.1",
+        "y-protocols": "^1.0.6",
+        "y-webrtc": "^10.3.0",
+        "yjs": "^13.6.27"
+    }
+}
