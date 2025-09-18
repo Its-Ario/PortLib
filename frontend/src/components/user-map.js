@@ -214,7 +214,7 @@ export class UserMap extends LitElement {
         }
     }
 
-    upsertMarker(username, lat, lng, isCurrentUser = false, accuracy = 20) {
+    upsertMarker(username, lat, lng, lastUpdated, isCurrentUser = false, accuracy = 20) {
         if (!this.map) return;
 
         if (this.markers.has(username)) {
@@ -234,6 +234,7 @@ export class UserMap extends LitElement {
                     ${isCurrentUser ? '<br><small>(You)</small>' : ''}
                     <br><small>Lat: ${lat.toFixed(6)}</small>
                     <br><small>Lng: ${lng.toFixed(6)}</small>
+                    <br><small>Last updated: ${lastUpdated}</small>
                 </div>
             `);
 
@@ -287,7 +288,10 @@ export class UserMap extends LitElement {
         });
 
         if (username && this.markers.has(username)) {
-            this.markers.get(username).openPopup();
+            const markerData = this.markers.get(username);
+            if (markerData && markerData.marker) {
+                markerData.marker.openPopup();
+            }
         }
     }
 
@@ -336,7 +340,7 @@ export class UserMap extends LitElement {
         this.users.forEach((user) => {
             currentUsernames.add(user.username);
             if (user.lat !== undefined && user.lng !== undefined) {
-                this.upsertMarker(user.username, user.lat, user.lng, user.current, user.accuracy);
+                this.upsertMarker(user.username, user.lat, user.lng, user.lastUpdated, user.current, user.accuracy);
             }
         });
 

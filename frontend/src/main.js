@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (map && map.isReady()) {
             users.forEach((u) => {
                 if (u.lat !== undefined && u.lng !== undefined) {
-                    map.upsertMarker(u.username, u.lat, u.lng, u.current, u.accuracy);
+                    map.upsertMarker(u.username, u.lat, u.lng, u.lastUpdated, u.current, u.accuracy);
                 }
             });
 

@@ -59,6 +59,7 @@ export class CollaborationService extends EventTarget {
             lng: data.lng,
             accuracy: data.accuracy,
             current: userId === this.currentUser?.id,
+            lastUpdated: data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : 'Unknown',
         }));
         this.dispatchEvent(new CustomEvent('users-changed', { detail: usersArray }));
     }

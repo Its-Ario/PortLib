@@ -232,7 +232,7 @@ export class UserList extends LitElement {
                 font-size: 0.85rem;
             }
 
-            .last-seen {
+            .last-updated {
                 font-size: 0.75rem;
                 color: var(--text-secondary);
                 font-weight: 400;
@@ -316,7 +316,7 @@ export class UserList extends LitElement {
                                       @click=${() => this._focusUser(user)}
                                   >
                                       <div class="username">${user.username}</div>
-                                      <div class="last-seen">Last seen: ${user.lastSeen}</div>
+                                      <div class="last-updated">Last updated: ${user.lastUpdated}</div>
                                   </div>
                               `
                           )}
