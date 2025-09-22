@@ -35,8 +35,6 @@
     "@eslint/js": "^9.35.0",
     "globals": "^16.4.0",
     "pnpm": "^10.16.1",
-    "swagger-ui-express": "^5.0.1",
-    "vitepress-openapi": "^0.1.9",
-    "yamljs": "^0.3.0"
+    "vitepress-openapi": "^0.1.9"
   }
 }
