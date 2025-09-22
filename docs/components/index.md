@@ -34,11 +34,11 @@ These components are designed to be composed together declaratively, just like s
 
 ```html
 <app-view>
-  <header-bar title="Welcome to PortLib"></header-bar>
-  <login-view></login-view>
+    <header-bar title="Welcome to PortLib"></header-bar>
+    <login-view></login-view>
 
-  <user-map zoom="5"></user-map>
-  <user-list></user-list>
+    <user-map zoom="5"></user-map>
+    <user-list></user-list>
 </app-view>
 ```
 

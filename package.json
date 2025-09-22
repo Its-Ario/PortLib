@@ -5,6 +5,7 @@
     "backend",
     "frontend"
   ],
+  "license": "MIT",
   "scripts": {
     "install-all": "pnpm install --w",
     "dev:backend": "pnpm --filter backend run dev",

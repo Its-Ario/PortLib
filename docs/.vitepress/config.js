@@ -3,6 +3,7 @@ import { defineConfig } from 'vitepress';
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
     title: 'PortLib',
+    base: '/docs/',
     description: 'A Portable Library SPA',
     themeConfig: {
         nav: [
