@@ -18,6 +18,7 @@ export default defineConfig({
             },
             {
                 text: 'Components',
+                link: '/components/index',
                 items: [
                     { text: 'app-view', link: '/components/app-view' },
                     { text: 'header-bar', link: '/components/header-bar' },

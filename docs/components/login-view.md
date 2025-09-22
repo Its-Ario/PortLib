@@ -41,7 +41,7 @@ function handleLogin(e) {
 - On success, stores JWT token with `saveAuthToken()` and dispatches `login-success`.
 - On failure, shows an error message in the UI.
 - **Auto-login** runs on component initialization:
-  - Reads JWT from local storage.
-  - Verifies token at `GET /api/verify-token`.
-  - If valid, dispatches `login-success`.
-  - If invalid, removes stored token.
+    - Reads JWT from local storage.
+    - Verifies token at `GET /api/verify-token`.
+    - If valid, dispatches `login-success`.
+    - If invalid, removes stored token.
