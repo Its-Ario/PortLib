@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import logger from './logger.js';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
 
 import mainRoutes from './routes/mainRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
@@ -11,6 +13,9 @@ import bookRoutes from './routes/bookRoutes.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 
 const app = express();
+const swaggerDocument = YAML.load('../docs/api/openapi.yaml');
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use(helmet());
 app.use(cors());

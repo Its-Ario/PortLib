@@ -316,7 +316,9 @@ export class UserList extends LitElement {
                                       @click=${() => this._focusUser(user)}
                                   >
                                       <div class="username">${user.username}</div>
-                                      <div class="last-updated">Last updated: ${user.lastUpdated}</div>
+                                      <div class="last-updated">
+                                          Last updated: ${user.lastUpdated}
+                                      </div>
                                   </div>
                               `
                           )}

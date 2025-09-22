@@ -1,14 +1,13 @@
 export function saveAuthToken(token) {
     if (token) {
-        localStorage.setItem('authToken', token);
-        console.log(localStorage.getItem('authToken'));
+        sessionStorage.setItem('authToken', token);
     }
 }
 
 export function getAuthToken() {
-    return localStorage.getItem('authToken');
+    return sessionStorage.getItem('authToken');
 }
 
 export function removeAuthToken() {
-    localStorage.removeItem('authToken');
+    sessionStorage.removeItem('authToken');
 }

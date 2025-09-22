@@ -109,16 +109,16 @@ describe('UserMap Component', () => {
     });
 
     it('should add a new user marker', () => {
-        element.upsertMarker('user1', 35.7, 51.4, "12:0:00 AM", false);
+        element.upsertMarker('user1', 35.7, 51.4, '12:0:00 AM', false);
         expect(element.markers.has('user1')).toBe(true);
         expect(element.markers.size).toBe(1);
     });
 
     it('should update existing marker position', () => {
-        element.upsertMarker('user1', 35.7, 51.4, "12:0:00 AM", false);
+        element.upsertMarker('user1', 35.7, 51.4, '12:0:00 AM', false);
         const initialMarkerData = element.markers.get('user1');
 
-        element.upsertMarker('user1', 35.8, 51.5, "12:0:00 AM", false);
+        element.upsertMarker('user1', 35.8, 51.5, '12:0:00 AM', false);
 
         expect(element.markers.size).toBe(1);
         expect(element.markers.get('user1')).toBe(initialMarkerData);
@@ -127,7 +127,7 @@ describe('UserMap Component', () => {
     });
 
     it('should remove a user marker', () => {
-        element.upsertMarker('user2', 35.7, 51.4, "12:0:00 AM", false);
+        element.upsertMarker('user2', 35.7, 51.4, '12:0:00 AM', false);
         expect(element.markers.has('user2')).toBe(true);
 
         element.removeMarker('user2');
@@ -135,8 +135,8 @@ describe('UserMap Component', () => {
     });
 
     it('should clear all markers', () => {
-        element.upsertMarker('user1', 35.7, 51.4, "12:0:00 AM", false);
-        element.upsertMarker('user2', 35.8, 51.5, "12:0:00 AM", false);
+        element.upsertMarker('user1', 35.7, 51.4, '12:0:00 AM', false);
+        element.upsertMarker('user2', 35.8, 51.5, '12:0:00 AM', false);
         expect(element.markers.size).toBe(2);
 
         element.clearMarkers();

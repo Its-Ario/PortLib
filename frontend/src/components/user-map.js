@@ -340,7 +340,14 @@ export class UserMap extends LitElement {
         this.users.forEach((user) => {
             currentUsernames.add(user.username);
             if (user.lat !== undefined && user.lng !== undefined) {
-                this.upsertMarker(user.username, user.lat, user.lng, user.lastUpdated, user.current, user.accuracy);
+                this.upsertMarker(
+                    user.username,
+                    user.lat,
+                    user.lng,
+                    user.lastUpdated,
+                    user.current,
+                    user.accuracy
+                );
             }
         });
 
