@@ -14,9 +14,9 @@
 
 ## 👋 Introduction
 
-**PortLib** is a modern web application that creates a shared, portable library for your local community. It connects book lovers, making it easy to **buy, sell, and borrow books** through a seamless and social platform.
+**PortLib** is a modern web application that creates a shared, portable library for your local community. It connects people, making it easy to **buy, sell, and borrow books** through a seamless and social platform.
 
-<!-- This repository contains the full source code for the project. For a complete guide on the project's components and API, please visit our **[full documentation website](https://lib.itsario.ir/docs)**. -->
+This repository contains the full source code for the project. For a complete guide on the project's components and API, please visit our **[full documentation](https://lib.itsario.ir/docs)**.
 
 ## ✨ Core Features
 
@@ -30,7 +30,7 @@
 ## 🛠️ Tech Stack
 
 - **Frontend**: Native Web Components, [Vite](https://vitejs.dev/), [Leaflet.js](https://leafletjs.com/), [Yjs](https://docs.yjs.dev/)
-- **Backend**: [Node.js](https://nodejs.org/), [Express.js](https://expressjs.com/), [Socket.IO](https://socket.io/) (for WebRTC signaling)
+- **Backend**: [Node.js](https://nodejs.org/), [Express.js](https://expressjs.com/), WebSockets (Signalling)
 - **Database**: [MongoDB](https://www.mongodb.com/) with [Mongoose](https://mongoosejs.com/)
 - **Authentication**: JSON Web Tokens (JWT)
 
@@ -81,7 +81,7 @@ Once both servers are running, open your browser to the address provided by Vite
 
 ## 🤝 Contributing
 
-Contributions are welcome! PortLib is an open-source project, and we love to receive feedback, bug reports, and pull requests. Before you start, please read our (TODO: link to `CONTRIBUTING.md`) contribution guidelines.
+Contributions are welcome! PortLib is an open-source project, and we love to receive feedback, bug reports, and pull requests. Before you start, please read our [**contribution guidelines**](CONTRIBUTING.md).
 
 Please visit the [GitHub Issues](https://github.com/Its-Ario/PortLib/issues) to see what you can help with.
 
