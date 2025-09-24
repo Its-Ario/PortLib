@@ -15,7 +15,12 @@ function generateToken(user) {
 }
 
 router.get('/verify-token', auth, async (req, res) => {
-    res.status(200).json({ ok: true, user: req.user });
+        const userData = {
+            id: req.user._id.toString(),
+            name: req.user.name,
+        };
+
+    res.status(200).json({ ok: true, user: userData });
 });
 
 router.post('/login', async (req, res) => {

@@ -78,7 +78,7 @@ export class HeaderBar extends LitElement {
         return html`
             <div class="container">
                 <div class="username">
-                    ${this.user?.username ? `Welcome, ${this.user.username}` : ''}
+                    ${this.user?.name ? `Welcome, ${this.user.name}` : ''}
                 </div>
                 <h1><i class="fas fa-map-marker-alt"></i>PortLib Location Map</h1>
                 <button @click=${this._onLogout}>Logout</button>

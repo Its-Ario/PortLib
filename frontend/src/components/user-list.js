@@ -315,7 +315,7 @@ export class UserList extends LitElement {
                                       class="user-item ${user.current ? 'current-user' : ''}"
                                       @click=${() => this._focusUser(user)}
                                   >
-                                      <div class="username">${user.username}</div>
+                                      <div class="username">${user.userDetails.name}</div>
                                       <div class="last-updated">
                                           Last updated: ${user.lastUpdated}
                                       </div>

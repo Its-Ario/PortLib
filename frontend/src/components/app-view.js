@@ -187,7 +187,7 @@ export class AppView extends LitElement {
         if (user.lat !== undefined && user.lng !== undefined) {
             const map = this.map;
             if (map && map.focusLocation) {
-                map.focusLocation(user.lat, user.lng, user.username);
+                map.focusLocation(user.lat, user.lng, user.userDetails.id);
             }
         }
     }

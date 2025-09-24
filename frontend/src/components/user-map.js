@@ -7,7 +7,7 @@ import leafletStyles from 'leaflet/dist/leaflet.css?inline';
 export class UserMap extends LitElement {
     static properties = {
         users: { type: Array },
-        currentUser: { type: String },
+        currentUserId: { type: String },
     };
 
     static styles = [
@@ -139,7 +139,7 @@ export class UserMap extends LitElement {
         super();
         this.map = null;
         this.markers = new Map();
-        this.currentUser = null;
+        this.currentUserId = null;
         this.isLoading = true;
         this.users = [];
     }
@@ -214,11 +214,11 @@ export class UserMap extends LitElement {
         }
     }
 
-    upsertMarker(username, lat, lng, lastUpdated, isCurrentUser = false, accuracy = 20) {
+    upsertMarker(userDetails, lat, lng, lastUpdated, isCurrentUser = false, accuracy = 20) {
         if (!this.map) return;
 
-        if (this.markers.has(username)) {
-            const { marker, circle } = this.markers.get(username);
+        if (this.markers.has(userDetails.id)) {
+            const { marker, circle } = this.markers.get(userDetails.id);
             marker.setLatLng([lat, lng]);
             if (circle) circle.setLatLng([lat, lng]).setRadius(accuracy);
         } else {
@@ -230,7 +230,7 @@ export class UserMap extends LitElement {
 
             const marker = L.marker([lat, lng], { icon: dotIcon }).addTo(this.map).bindPopup(`
                 <div style="text-align:center;">
-                    <strong>${username}</strong>
+                    <strong>${userDetails.name}</strong>
                     ${isCurrentUser ? '<br><small>(You)</small>' : ''}
                     <br><small>Lat: ${lat.toFixed(6)}</small>
                     <br><small>Lng: ${lng.toFixed(6)}</small>
@@ -246,12 +246,12 @@ export class UserMap extends LitElement {
                 weight: 1,
             }).addTo(this.map);
 
-            this.markers.set(username, { marker, circle: accuracyCircle });
+            this.markers.set(userDetails.id, { marker, circle: accuracyCircle });
 
             marker.on('click', () => {
                 this.dispatchEvent(
                     new CustomEvent('marker-click', {
-                        detail: { username, lat, lng, isCurrentUser },
+                        detail: { userId: userDetails.id, lat, lng, isCurrentUser },
                         bubbles: true,
                         composed: true,
                     })
@@ -260,12 +260,12 @@ export class UserMap extends LitElement {
         }
     }
 
-    removeMarker(username) {
-        const markerData = this.markers.get(username);
+    removeMarker(userId) {
+        const markerData = this.markers.get(userId);
         if (markerData && this.map) {
             if (markerData.marker) this.map.removeLayer(markerData.marker);
             if (markerData.circle) this.map.removeLayer(markerData.circle);
-            this.markers.delete(username);
+            this.markers.delete(userId);
         }
     }
 
@@ -279,7 +279,7 @@ export class UserMap extends LitElement {
         this.markers.clear();
     }
 
-    focusLocation(lat, lng, username = null, zoom = 16) {
+    focusLocation(lat, lng, userId = null, zoom = 16) {
         if (!this.map) return;
 
         this.map.setView([lat, lng], zoom, {
@@ -287,8 +287,8 @@ export class UserMap extends LitElement {
             duration: 1,
         });
 
-        if (username && this.markers.has(username)) {
-            const markerData = this.markers.get(username);
+        if (userId && this.markers.has(userId)) {
+            const markerData = this.markers.get(userId);
             if (markerData && markerData.marker) {
                 markerData.marker.openPopup();
             }
@@ -316,8 +316,8 @@ export class UserMap extends LitElement {
         return this.map.getZoom();
     }
 
-    setCurrentUser(username) {
-        this.currentUser = username;
+    setCurrentUser(userId) {
+        this.currentUserId = userId;
     }
 
     isReady() {
@@ -335,13 +335,13 @@ export class UserMap extends LitElement {
     _syncMarkersToUsers() {
         if (!this.isReady() || !this.users) return;
 
-        const currentUsernames = new Set();
+        const currentUsers = new Set();
 
         this.users.forEach((user) => {
-            currentUsernames.add(user.username);
+            currentUsers.add(user.id);
             if (user.lat !== undefined && user.lng !== undefined) {
                 this.upsertMarker(
-                    user.username,
+                    user.id,
                     user.lat,
                     user.lng,
                     user.lastUpdated,
@@ -351,9 +351,9 @@ export class UserMap extends LitElement {
             }
         });
 
-        this.markers.forEach((markerData, username) => {
-            if (!currentUsernames.has(username)) {
-                this.removeMarker(username);
+        this.markers.forEach((markerData, userId) => {
+            if (!currentUsers.has(userId)) {
+                this.removeMarker(userId);
             }
         });
     }

@@ -15,8 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
     app.addEventListener('login-success', (e) => {
         currentUser = e.detail.user;
         saveAuthToken(currentUser.token);
-        app.map?.setCurrentUser(currentUser.username);
-        collabService.connect(currentUser.id || currentUser._id, currentUser.username);
+        app.map?.setCurrentUser(currentUser.id);
+        collabService.connect('map', currentUser);
     });
 
     app.addEventListener('toggle-tracking', (e) => {
@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!showLocation) {
             collabService.removeCurrentUser();
             if (map) {
-                map.removeMarker(currentUser.username);
+                map.removeMarker(currentUser.id);
             }
         } else {
             collabService.updateUserLocation({
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (isFirstLocationUpdate && app.map) {
-            app.map.focusLocation(lat, lng, currentUser.username);
+            app.map.focusLocation(lat, lng, currentUser.id);
             isFirstLocationUpdate = false;
         }
     });
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
             users.forEach((u) => {
                 if (u.lat !== undefined && u.lng !== undefined) {
                     map.upsertMarker(
-                        u.username,
+                        u.userDetails,
                         u.lat,
                         u.lng,
                         u.lastUpdated,
@@ -92,10 +92,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            const currentUsernames = new Set(users.map((u) => u.username));
-            map.markers.forEach((marker, username) => {
-                if (!currentUsernames.has(username)) {
-                    map.removeMarker(username);
+            const currentUsers = new Set(users.map((u) => u.userDetails.id));
+            map.markers.forEach((marker, id) => {
+                if (!currentUsers.has(id)) {
+                    map.removeMarker(id);
                 }
             });
         }
