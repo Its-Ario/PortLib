@@ -47,8 +47,15 @@ export class CollaborationService extends EventTarget {
 
         this.awareness.setLocalStateField('location', {
             ...locationData,
+            user: this.currentUser,
             timestamp: Date.now(),
         });
+    }
+
+    removeCurrentUser() {
+        if (this.awareness) {
+            this.awareness.setLocalStateField('location', null);
+        }
     }
 
     emitUsersChange() {
