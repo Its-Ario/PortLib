@@ -109,16 +109,16 @@ describe('UserMap Component', () => {
     });
 
     it('should add a new user marker', () => {
-        element.upsertMarker({id: '1', name: 'Alice'}, 35.7, 51.4, '12:0:00 AM', false);
+        element.upsertMarker({ id: '1', name: 'Alice' }, 35.7, 51.4, '12:0:00 AM', false);
         expect(element.markers.has('1')).toBe(true);
         expect(element.markers.size).toBe(1);
     });
 
     it('should update existing marker position', () => {
-        element.upsertMarker({id: '1', name: 'Alice'}, 35.8, 51.5, '12:0:00 AM', false);
+        element.upsertMarker({ id: '1', name: 'Alice' }, 35.8, 51.5, '12:0:00 AM', false);
         const initialMarkerData = element.markers.get('1');
 
-        element.upsertMarker({id: '1', name: 'Alice'}, 35.8, 51.5, '12:0:00 AM', false);
+        element.upsertMarker({ id: '1', name: 'Alice' }, 35.8, 51.5, '12:0:00 AM', false);
 
         expect(element.markers.size).toBe(1);
         expect(element.markers.get('1')).toBe(initialMarkerData);
@@ -127,7 +127,7 @@ describe('UserMap Component', () => {
     });
 
     it('should remove a user marker', () => {
-        element.upsertMarker({id: '1', name: 'Alice'}, 35.7, 51.4, '12:0:00 AM', false);
+        element.upsertMarker({ id: '1', name: 'Alice' }, 35.7, 51.4, '12:0:00 AM', false);
         expect(element.markers.has('1')).toBe(true);
 
         element.removeMarker('1');
@@ -135,8 +135,8 @@ describe('UserMap Component', () => {
     });
 
     it('should clear all markers', () => {
-        element.upsertMarker({id: '1', name: 'Alice'}, 35.7, 51.4, '12:0:00 AM', false);
-        element.upsertMarker({id: '2', name: 'Bob'}, 35.8, 51.5, '12:0:00 AM', false);
+        element.upsertMarker({ id: '1', name: 'Alice' }, 35.7, 51.4, '12:0:00 AM', false);
+        element.upsertMarker({ id: '2', name: 'Bob' }, 35.8, 51.5, '12:0:00 AM', false);
         expect(element.markers.size).toBe(2);
 
         element.clearMarkers();
@@ -172,8 +172,8 @@ describe('UserList Component', () => {
 
     it('should display users count correctly', async () => {
         element.users = [
-            { userDetails: {id: '1', name: 'Alice'}, lastUpdated: '10:00 AM', current: false },
-            { userDetails: {id: '2', name: 'Bob'}, lastUpdated: '10:05 AM', current: true },
+            { userDetails: { id: '1', name: 'Alice' }, lastUpdated: '10:00 AM', current: false },
+            { userDetails: { id: '2', name: 'Bob' }, lastUpdated: '10:05 AM', current: true },
         ];
         await element.updateComplete;
 
@@ -182,7 +182,9 @@ describe('UserList Component', () => {
     });
 
     it('should show singular form for one user', async () => {
-        element.users = [{ userDetails: {id: '1', name: 'Alice'}, lastUpdated: '10:00 AM', current: true }];
+        element.users = [
+            { userDetails: { id: '1', name: 'Alice' }, lastUpdated: '10:00 AM', current: true },
+        ];
         await element.updateComplete;
 
         const usersCount = element.shadowRoot.querySelector('.users-count');
@@ -233,7 +235,13 @@ describe('UserList Component', () => {
 
     it('should emit focus-user event when user item clicked', async () => {
         element.users = [
-            { userDetails: {id: '1', name: 'Alice'}, lastUpdated: '10:00 AM', current: false, lat: 35.7, lng: 51.4 },
+            {
+                userDetails: { id: '1', name: 'Alice' },
+                lastUpdated: '10:00 AM',
+                current: false,
+                lat: 35.7,
+                lng: 51.4,
+            },
         ];
         await element.updateComplete;
 
@@ -301,8 +309,8 @@ describe('AppView Component', () => {
 
     it('should update users correctly', () => {
         const testUsers = [
-            { userDetails: {id: '1', name: 'Alice'}, lastUpdated: '10:00 AM', current: false },
-            { userDetails: {id: '2', name: 'Bob'}, lastUpdated: '10:05 AM', current: true },
+            { userDetails: { id: '1', name: 'Alice' }, lastUpdated: '10:00 AM', current: false },
+            { userDetails: { id: '2', name: 'Bob' }, lastUpdated: '10:05 AM', current: true },
         ];
 
         element.updateUsers(testUsers);
@@ -388,7 +396,7 @@ describe('Component Tests', () => {
         const userMap = appView.map;
         const focusLocationSpy = vi.spyOn(userMap, 'focusLocation');
 
-        const testUser = { userDetails: {id: '1', name: 'Alice'}, lat: 35.7, lng: 51.4 };
+        const testUser = { userDetails: { id: '1', name: 'Alice' }, lat: 35.7, lng: 51.4 };
         appView._onFocusUser({ detail: { user: testUser } });
 
         expect(focusLocationSpy).toHaveBeenCalledWith(35.7, 51.4, '1');

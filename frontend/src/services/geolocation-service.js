@@ -41,12 +41,11 @@ export class GeolocationService extends EventTarget {
             }
             navigator.geolocation.getCurrentPosition(
                 (pos) => resolve(this._formatPosition(pos)),
-                (err) => reject(this._formatError(err),
-                options)
+                (err) => reject(this._formatError(err), options)
             );
         });
     }
-    
+
     _handleSuccess(pos) {
         this.dispatchEvent(
             new CustomEvent('location-update', {
@@ -58,7 +57,7 @@ export class GeolocationService extends EventTarget {
     _handleError(error) {
         this.dispatchEvent(new CustomEvent('error', { detail: this._formatError(error) }));
     }
-    
+
     _formatPosition(pos) {
         const { latitude, longitude, accuracy } = pos.coords;
         return { lat: latitude, lng: longitude, accuracy };
@@ -80,7 +79,9 @@ export class GeolocationService extends EventTarget {
     _checkSupport() {
         const supported = 'geolocation' in navigator;
         if (!supported) {
-            this.dispatchEvent(new CustomEvent('error', { detail: 'Geolocation is not supported.' }));
+            this.dispatchEvent(
+                new CustomEvent('error', { detail: 'Geolocation is not supported.' })
+            );
         }
         return supported;
     }

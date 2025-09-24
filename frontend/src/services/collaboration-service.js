@@ -26,9 +26,9 @@ export class CollaborationService extends EventTarget {
             this.dispatchEvent(new CustomEvent('connection-status', { detail: status }))
         );
 
-        this.currentUser = { 
-        ...userDetails, 
-        clientID: this.awareness.clientID 
+        this.currentUser = {
+            ...userDetails,
+            clientID: this.awareness.clientID,
         };
 
         this.awareness.setLocalStateField('user', this.currentUser);
@@ -43,18 +43,20 @@ export class CollaborationService extends EventTarget {
     }
 
     updateUserLocation(locationData) {
-        if (!this.awareness) return;
+        if (!this.awareness || !this.currentUser) return;
 
-        this.awareness.setLocalStateField('location', {
-            ...locationData,
+        this.awareness.setLocalState({
             user: this.currentUser,
-            timestamp: Date.now(),
+            location: {
+                ...locationData,
+                timestamp: Date.now(),
+            },
         });
     }
 
     removeCurrentUser() {
         if (this.awareness) {
-            this.awareness.setLocalStateField('location', null);
+            this.awareness.setLocalState(null);
         }
     }
 
@@ -64,14 +66,14 @@ export class CollaborationService extends EventTarget {
         const states = Array.from(this.awareness.getStates().values());
 
         const usersArray = states
-            .filter(state => state.user && state.location)
-            .map(state => ({
+            .filter((state) => state.user && state.location)
+            .map((state) => ({
                 userDetails: state.user,
                 ...state.location,
                 current: this.awareness.clientID === state.user.clientID,
                 lastUpdated: new Date(state.location.timestamp).toLocaleTimeString(),
             }));
-            
+
         this.dispatchEvent(new CustomEvent('users-changed', { detail: usersArray }));
     }
 }
