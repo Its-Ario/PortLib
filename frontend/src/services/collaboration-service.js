@@ -20,6 +20,17 @@ export class CollaborationService extends EventTarget {
         this.provider = new WebrtcProvider(room, this.doc, {
             signaling: ['wss://lib.itsario.ir/api/'],
             awareness: this.awareness,
+            filterBcConns: true,
+            peerOpts: {
+                iceServers: [
+                { urls: 'stun:itsario.ir:3478' },
+                {
+                    urls: 'turns:itsario.ir:3478?transport=tcp',
+                    username: 'testuser',
+                    credential: 'testpassword'
+                }
+                ]
+            }
         });
 
         this.provider.on('status', ({ status }) =>
