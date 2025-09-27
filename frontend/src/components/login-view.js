@@ -199,6 +199,7 @@ export class LoginView extends LitElement {
                                 : 'Login'}
                         </button>
                         ${this.error ? html`<div class="error-message">${this.error}</div>` : ''}
+                        <a class="button google" href="/api/login/federated/google">Sign in with Google</a>
                     </form>
                 </div>
             </div>
