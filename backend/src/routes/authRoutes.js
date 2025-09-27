@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import auth from '../middleware/authMiddleware.js';
-import passport, { use } from 'passport';
+import passport from 'passport';
 
 import {
     login,
