@@ -22,14 +22,16 @@ export class CollaborationService extends EventTarget {
             awareness: this.awareness,
             filterBcConns: true,
             peerOpts: {
-                iceServers: [
-                { urls: 'stun:itsario.ir:3478' },
-                {
-                    urls: 'turns:itsario.ir:3478?transport=tcp',
-                    username: 'testuser',
-                    credential: 'testpassword'
+                config: {
+                    iceServers: [
+                    { urls: 'stun:itsario.ir:3478' },
+                    {
+                        urls: 'turns:itsario.ir:3478?transport=tcp',
+                        username: 'testuser',
+                        credential: 'testpassword'
+                    }
+                    ]
                 }
-                ]
             }
         });
 
