@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import auth from '../middleware/authMiddleware.js';
-import passport from 'passport';
+import passport from '../config/passport.js';
+import { generateToken } from '../utils/auth.js';
 
 import {
     login,
@@ -31,11 +32,10 @@ router.post('/logout', auth, logout);
 router.get('/login/federated/google', passport.authenticate('google', {session: false}));
 
 router.get('/oauth2/redirect/google', passport.authenticate('google', { failureRedirect: '/', session: false }),
-  async (req, res) => {
-    const googleUser = req.user;
-    // const token = generateToken();
+    async (req, res) => {
+        const token = generateToken(req.user);
 
-    res.json({ ok: true, name: googleUser.displayName });
+        res.json({ ok: true, token });
 });
 
 export default router;

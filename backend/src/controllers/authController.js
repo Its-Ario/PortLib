@@ -1,14 +1,7 @@
 import { compare, hash } from 'bcrypt';
 import userService from '../services/userService.js';
 import logger from '../logger.js';
-import pkg from 'jsonwebtoken';
-const { sign } = pkg;
-
-function generateToken(user) {
-    return sign({ id: user._id, tokenVersion: user.tokenVersion }, process.env.JWT_SECRET, {
-        expiresIn: '7d',
-    });
-}
+import { generateToken } from '../utils/auth.js';
 
 export const login = async (req, res) => {
     try {
